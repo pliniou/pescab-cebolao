@@ -1,0 +1,19 @@
+{
+ "unidade": "metro",
+ "eixos": "Y para cima; +X = esquerdo do paciente; +Z = anterior",
+ "centro_mm_zanatomy": [
+  -0.05,
+  1.55,
+  1598.49
+ ],
+ "camadas": [
+  "ossos",
+  "vertebras",
+  "dentes",
+  "musculos",
+  "nervos",
+  "arterias",
+  "veias",
+  "glandulas"
+ ]
+}

@@ -1,0 +1,404 @@
+{
+ "gerado": "2026-10-06",
+ "criterio": "OK: |z| ≤ 2 (dentro de média ± 2 DP da referência) · ALERTA: 2 < |z| ≤ 3 · FALHA: |z| > 3. Tolerância percentual de cada medida = 2·DP/média.",
+ "fontes": {
+  "howells": "Howells WW. Cranial Variation in Man. Papers of the Peabody Museum 67, 1973; Skull Shapes and the Map, Papers 79, 1989; Who's Who in Skulls, Papers 82, 1995. Dados brutos: https://volweb.utk.edu/~auerbach/Howell.csv (2524 crânios de 28 populações; aqui: 1368 masculinos).",
+  "kim2013": "Kim SY, Lim SH, Gang SN, Kim HJ. Crown and root lengths of incisors, canines, and premolars measured by cone-beam computed tomography in patients with malocclusions. Korean J Orthod. 2013;43(6):271-278. doi:10.4041/kjod.2013.43.6.271 (acesso aberto: PMC3879283)"
+ },
+ "cranio": [
+  {
+   "codigo": "GOL",
+   "nome": "Comprimento máximo do crânio (glabela–opistocrânio)",
+   "estruturas": [
+    "frontal bone",
+    "occipital bone",
+    "parietal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 183.2,
+    "dp": 7.5,
+    "min": 160,
+    "max": 206
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 174.4,
+    "dp": 7.1,
+    "min": 151,
+    "max": 197
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 182.2,
+    "dp": 6,
+    "min": 165,
+    "max": 195
+   }
+  },
+  {
+   "codigo": "XCB",
+   "nome": "Largura máxima do crânio (eurio–eurio)",
+   "estruturas": [
+    "parietal bone",
+    "temporal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 139.1,
+    "dp": 7.1,
+    "min": 119,
+    "max": 167
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 134.2,
+    "dp": 6.6,
+    "min": 116,
+    "max": 161
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 140,
+    "dp": 4.8,
+    "min": 130,
+    "max": 152
+   }
+  },
+  {
+   "codigo": "ZYB",
+   "nome": "Largura bizigomática (zígio–zígio)",
+   "estruturas": [
+    "zygomatic bone",
+    "temporal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 135.1,
+    "dp": 6.5,
+    "min": 115,
+    "max": 158
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 125.6,
+    "dp": 5.8,
+    "min": 105,
+    "max": 146
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 134.7,
+    "dp": 4.3,
+    "min": 126,
+    "max": 148
+   }
+  },
+  {
+   "codigo": "BBH",
+   "nome": "Altura básio–bregma",
+   "estruturas": [
+    "occipital bone",
+    "frontal bone",
+    "parietal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 134.6,
+    "dp": 6.8,
+    "min": 114,
+    "max": 155
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 128.2,
+    "dp": 6.1,
+    "min": 107,
+    "max": 149
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 137.6,
+    "dp": 5.3,
+    "min": 124,
+    "max": 148
+   }
+  },
+  {
+   "codigo": "BNL",
+   "nome": "Comprimento da base do crânio (básio–násio)",
+   "estruturas": [
+    "occipital bone",
+    "sphenoid bone",
+    "nasal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 101.5,
+    "dp": 5.4,
+    "min": 85,
+    "max": 120
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 96.2,
+    "dp": 4.9,
+    "min": 83,
+    "max": 113
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 101.7,
+    "dp": 4.2,
+    "min": 90,
+    "max": 110
+   }
+  },
+  {
+   "codigo": "BPL",
+   "nome": "Comprimento básio–próstio",
+   "estruturas": [
+    "occipital bone",
+    "maxilla"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 99.8,
+    "dp": 6.2,
+    "min": 81,
+    "max": 123
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 95.4,
+    "dp": 5.7,
+    "min": 80,
+    "max": 113
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 98.9,
+    "dp": 5.4,
+    "min": 81,
+    "max": 110
+   }
+  },
+  {
+   "codigo": "NPH",
+   "nome": "Altura facial superior (násio–próstio)",
+   "estruturas": [
+    "maxilla",
+    "nasal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 68,
+    "dp": 5.2,
+    "min": 49,
+    "max": 82
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 63.5,
+    "dp": 4.9,
+    "min": 48,
+    "max": 80
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 70,
+    "dp": 3.9,
+    "min": 62,
+    "max": 81
+   }
+  },
+  {
+   "codigo": "FRC",
+   "nome": "Corda frontal (násio–bregma)",
+   "estruturas": [
+    "frontal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 111.7,
+    "dp": 5,
+    "min": 96,
+    "max": 128
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 107,
+    "dp": 4.8,
+    "min": 93,
+    "max": 125
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 111.2,
+    "dp": 4.5,
+    "min": 100,
+    "max": 121
+   }
+  },
+  {
+   "codigo": "PAC",
+   "nome": "Corda parietal (bregma–lambda)",
+   "estruturas": [
+    "parietal bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 112.8,
+    "dp": 6.1,
+    "min": 90,
+    "max": 135
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 108,
+    "dp": 6.2,
+    "min": 89,
+    "max": 127
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 113.6,
+    "dp": 6.2,
+    "min": 97,
+    "max": 129
+   }
+  },
+  {
+   "codigo": "OCC",
+   "nome": "Corda occipital (lambda–opístio)",
+   "estruturas": [
+    "occipital bone"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 96.9,
+    "dp": 6,
+    "min": 79,
+    "max": 118
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 94.3,
+    "dp": 5.5,
+    "min": 79,
+    "max": 113
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 100.2,
+    "dp": 5.6,
+    "min": 87,
+    "max": 117
+   }
+  },
+  {
+   "codigo": "MAB",
+   "nome": "Largura maxiloalveolar",
+   "estruturas": [
+    "maxilla"
+   ],
+   "unidade": "mm",
+   "masculino": {
+    "n": 1368,
+    "media": 65.3,
+    "dp": 3.7,
+    "min": 54,
+    "max": 78
+   },
+   "feminino": {
+    "n": 1156,
+    "media": 61.5,
+    "dp": 3.3,
+    "min": 52,
+    "max": 74
+   },
+   "masculino_japao": {
+    "n": 105,
+    "media": 66.8,
+    "dp": 3.8,
+    "min": 57,
+    "max": 78
+   }
+  }
+ ],
+ "dentes": {
+  "fonte": "kim2013",
+  "populacao": "62 pacientes coreanos com má oclusão (CBCT); valores do sexo masculino",
+  "definicao": "Comprimento do dente: ponta de cúspide (borda incisal nos anteriores) ao ápice radicular. Raiz: junção amelocementária vestibular ao ápice.",
+  "comprimento_total_masculino": {
+   "media": 22.83,
+   "dp": 2.55,
+   "dentes": "incisivos, caninos e pré-molares (agrupados)"
+  },
+  "coroa_masculino": {
+   "media": 10.38,
+   "dp": 1.61
+  },
+  "raiz_masculino_agrupada": {
+   "media": 13.53,
+   "dp": 1.77
+  },
+  "raiz_masculino": {
+   "superior": {
+    "1": [
+     12.3,
+     1.55
+    ],
+    "2": [
+     13.25,
+     1.2
+    ],
+    "3": [
+     15.83,
+     1.49
+    ],
+    "4": [
+     13.24,
+     1.3
+    ],
+    "5": [
+     13.18,
+     1.72
+    ]
+   },
+   "inferior": {
+    "1": [
+     11.56,
+     0.87
+    ],
+    "2": [
+     12.75,
+     0.95
+    ],
+    "3": [
+     15.02,
+     1.52
+    ],
+    "4": [
+     13.77,
+     1.23
+    ],
+    "5": [
+     13.58,
+     1.11
+    ]
+   }
+  },
+  "sem_referencia": "Molares (16, 17, 26, 27, 36, 37, 46, 47): nenhuma fonte de acesso aberto com valores verificáveis foi encontrada; ficam sem validação dimensional."
+ }
+}

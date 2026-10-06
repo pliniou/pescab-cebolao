@@ -1,0 +1,9 @@
+# Texto sempre em LF (UTF-8 sem BOM), sem conversão para CRLF no checkout
+* text=auto eol=lf
+*.cmd text eol=crlf
+
+# Binários: modelos, ícones e fontes nunca passam por conversão nem diff de texto
+*.glb binary
+*.png binary
+*.ico binary
+*.woff2 binary

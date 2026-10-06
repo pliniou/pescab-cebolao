@@ -1,0 +1,161 @@
+{
+ "gerado": "2026-10-06",
+ "criterio": "OK: |z| ≤ 2 (dentro de média ± 2 DP da referência) · ALERTA: 2 < |z| ≤ 3 · FALHA: |z| > 3. Tolerância percentual de cada medida = 2·DP/média.",
+ "resumo": {
+  "medidas": {
+   "total": 31,
+   "OK": 18,
+   "ALERTA": 11,
+   "FALHA": 2,
+   "sem_referencia": 8
+  },
+  "relacoes": {
+   "total": 15,
+   "OK": 8,
+   "ALERTA": 7,
+   "FALHA": 0
+  },
+  "erro_medio_abs_pct": {
+   "cranio": 4.5,
+   "dentes": 22.7
+  }
+ },
+ "avisos": {
+  "FMA52735": [
+   "ALERTA: Corda occipital (lambda–opístio). Modelo 109.4 mm; referência 96.9 ± 6 mm (Howells, masculino)."
+  ],
+  "FMA55680_D": [
+   "ALERTA: comprimento do dente no modelo 29.5 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 15 mm, contra raiz de 13.25 ± 1.2 mm na referência."
+  ],
+  "FMA55798_D": [
+   "FALHA: comprimento do dente no modelo 31.2 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 19 mm, contra raiz de 15.83 ± 1.49 mm na referência."
+  ],
+  "FMA55689_D": [
+   "ALERTA: comprimento do dente no modelo 28.1 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 18 mm, contra raiz de 13.24 ± 1.3 mm na referência."
+  ],
+  "FMA55698_D": [
+   "Dimensões sem validação: não há referência aberta verificada para molares."
+  ],
+  "FMA55697_D": [
+   "Dimensões sem validação: não há referência aberta verificada para molares."
+  ],
+  "FMA55683_E": [
+   "ALERTA: comprimento do dente no modelo 29.5 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 15 mm, contra raiz de 13.25 ± 1.2 mm na referência."
+  ],
+  "FMA55799_E": [
+   "FALHA: comprimento do dente no modelo 31.2 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 19 mm, contra raiz de 15.83 ± 1.49 mm na referência."
+  ],
+  "FMA55690_E": [
+   "ALERTA: comprimento do dente no modelo 28.1 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 18 mm, contra raiz de 13.24 ± 1.3 mm na referência."
+  ],
+  "FMA55699_E": [
+   "Dimensões sem validação: não há referência aberta verificada para molares."
+  ],
+  "FMA55700_E": [
+   "Dimensões sem validação: não há referência aberta verificada para molares."
+  ],
+  "FMA57143_E": [
+   "ALERTA: comprimento do dente no modelo 30 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 20 mm, contra raiz de 11.56 ± 0.87 mm na referência."
+  ],
+  "FMA57141_E": [
+   "ALERTA: comprimento do dente no modelo 29.1 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 19 mm, contra raiz de 12.75 ± 0.95 mm na referência."
+  ],
+  "FMA55687_E": [
+   "ALERTA: comprimento do dente no modelo 29.4 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 20 mm, contra raiz de 15.02 ± 1.52 mm na referência."
+  ],
+  "FMA55704_E": [
+   "Dimensões sem validação: não há referência aberta verificada para molares.",
+   "ALERTA: Canal mandibular abaixo do ápice do 36. Medido no modelo: ápice 0.9 mm abaixo do topo do tronco do nervo (raiz invade o canal)."
+  ],
+  "FMA55703_E": [
+   "Dimensões sem validação: não há referência aberta verificada para molares.",
+   "ALERTA: Canal mandibular abaixo do ápice do 37. Medido no modelo: ápice 1.6 mm abaixo do topo do tronco do nervo (raiz invade o canal)."
+  ],
+  "FMA57142_D": [
+   "ALERTA: comprimento do dente no modelo 30 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 20 mm, contra raiz de 11.56 ± 0.87 mm na referência."
+  ],
+  "FMA57140_D": [
+   "ALERTA: comprimento do dente no modelo 29.1 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 19 mm, contra raiz de 12.75 ± 0.95 mm na referência."
+  ],
+  "FMA55686_D": [
+   "ALERTA: comprimento do dente no modelo 29.4 mm; referência 22.83 ± 2.55 mm (Kim et al. 2013, incisivos a pré-molares, masculino). O excesso está na raiz: só o trecho dentro do osso já mede 20 mm, contra raiz de 15.02 ± 1.52 mm na referência."
+  ],
+  "FMA55705_D": [
+   "Dimensões sem validação: não há referência aberta verificada para molares.",
+   "ALERTA: Canal mandibular abaixo do ápice do 46. Medido no modelo: ápice 0.9 mm abaixo do topo do tronco do nervo (raiz invade o canal)."
+  ],
+  "FMA55706_D": [
+   "Dimensões sem validação: não há referência aberta verificada para molares.",
+   "ALERTA: Canal mandibular abaixo do ápice do 47. Medido no modelo: ápice 1.7 mm abaixo do topo do tronco do nervo (raiz invade o canal)."
+  ],
+  "FMA52749": [
+   "ALERTA: Osso hioide no nível de C3. Medido no modelo: centro do hioide no nível 3.6 (disco C3/C4); a posição da cabeça altera esse nível."
+  ],
+  "inferior_alveolar_nerve_D": [
+   "ALERTA: N. alveolar inferior (D) dentro da mandíbula (canal mandibular). Medido no modelo: 89% dos pontos entre os forames mandibular e mentual com osso vestibular, lingual e inferior.",
+   "ALERTA: Canal mandibular abaixo do ápice do 46. Medido no modelo: ápice 0.9 mm abaixo do topo do tronco do nervo (raiz invade o canal).",
+   "ALERTA: Canal mandibular abaixo do ápice do 47. Medido no modelo: ápice 1.7 mm abaixo do topo do tronco do nervo (raiz invade o canal)."
+  ],
+  "inferior_alveolar_nerve_E": [
+   "ALERTA: N. alveolar inferior (E) dentro da mandíbula (canal mandibular). Medido no modelo: 88% dos pontos entre os forames mandibular e mentual com osso vestibular, lingual e inferior.",
+   "ALERTA: Canal mandibular abaixo do ápice do 36. Medido no modelo: ápice 0.9 mm abaixo do topo do tronco do nervo (raiz invade o canal).",
+   "ALERTA: Canal mandibular abaixo do ápice do 37. Medido no modelo: ápice 1.6 mm abaixo do topo do tronco do nervo (raiz invade o canal)."
+  ]
+ },
+ "itens": {
+  "medida:GOL": "OK",
+  "medida:XCB": "OK",
+  "medida:ZYB": "OK",
+  "medida:BBH": "OK",
+  "medida:BNL": "OK",
+  "medida:BPL": "OK",
+  "medida:NPH": "OK",
+  "medida:FRC": "OK",
+  "medida:PAC": "OK",
+  "medida:OCC": "ALERTA",
+  "medida:MAB": "OK",
+  "dente:11": "OK",
+  "dente:12": "ALERTA",
+  "dente:13": "FALHA",
+  "dente:14": "ALERTA",
+  "dente:15": "OK",
+  "dente:16": "SEM_REFERENCIA",
+  "dente:17": "SEM_REFERENCIA",
+  "dente:21": "OK",
+  "dente:22": "ALERTA",
+  "dente:23": "FALHA",
+  "dente:24": "ALERTA",
+  "dente:25": "OK",
+  "dente:26": "SEM_REFERENCIA",
+  "dente:27": "SEM_REFERENCIA",
+  "dente:31": "ALERTA",
+  "dente:32": "ALERTA",
+  "dente:33": "ALERTA",
+  "dente:34": "OK",
+  "dente:35": "OK",
+  "dente:36": "SEM_REFERENCIA",
+  "dente:37": "SEM_REFERENCIA",
+  "dente:41": "ALERTA",
+  "dente:42": "ALERTA",
+  "dente:43": "ALERTA",
+  "dente:44": "OK",
+  "dente:45": "OK",
+  "dente:46": "SEM_REFERENCIA",
+  "dente:47": "SEM_REFERENCIA",
+  "relacao:Osso hioide no nível de C3": "ALERTA",
+  "relacao:Bifurcação da a. carótida comum (D) entre C3 e C4": "OK",
+  "relacao:Bifurcação da a. carótida comum (E) entre C3 e C4": "OK",
+  "relacao:Ducto parotídeo (D) termina em frente ao 2º molar superior (17)": "OK",
+  "relacao:Ducto parotídeo (E) termina em frente ao 2º molar superior (27)": "OK",
+  "relacao:Forame mentual (D) entre os pré-molares inferiores ou abaixo do 2º pré-molar": "OK",
+  "relacao:Forame mentual (E) entre os pré-molares inferiores ou abaixo do 2º pré-molar": "OK",
+  "relacao:N. alveolar inferior (D) dentro da mandíbula (canal mandibular)": "ALERTA",
+  "relacao:N. alveolar inferior (E) dentro da mandíbula (canal mandibular)": "ALERTA",
+  "relacao:Canal mandibular abaixo do ápice do 46": "ALERTA",
+  "relacao:Canal mandibular abaixo do ápice do 47": "ALERTA",
+  "relacao:Canal mandibular abaixo do ápice do 36": "ALERTA",
+  "relacao:Canal mandibular abaixo do ápice do 37": "ALERTA",
+  "relacao:Ápices radiculares dentro do osso alveolar (maxila/mandíbula)": "OK",
+  "relacao:Simetria bilateral das estruturas pares (dimensões D × E, tolerância 15%)": "OK"
+ }
+}

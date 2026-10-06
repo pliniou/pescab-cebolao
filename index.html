@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Atlas 3D interativo de cabeça e pescoço para estudo de Odontologia">
+  <meta name="theme-color" content="%BARRA%">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Atlas C&amp;P">
+  <title>Atlas Cabeça e Pescoço</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="app" data-modo="consultar">
+    <header class="barra">
+      <h1 class="marca">Atlas Cabeça e Pescoço</h1>
+      <nav class="modos" role="tablist" aria-label="Modo">
+        <button role="tab" id="aba-consultar" data-modo="consultar" aria-controls="painel-consultar" aria-selected="true">Consultar</button>
+        <button role="tab" id="aba-estudar" data-modo="estudar" aria-controls="painel-estudar" aria-selected="false" tabindex="-1">Estudar</button>
+        <button role="tab" id="aba-treinar" data-modo="treinar" aria-controls="painel-treinar" aria-selected="false" tabindex="-1">Treinar</button>
+      </nav>
+      <button id="bt-tema" class="bt icone-so" title="Tema claro ou escuro" aria-label="Alternar tema" data-icone="tema"></button>
+    </header>
+
+    <aside id="bandeja" class="bandeja" aria-label="Bandeja do modo">
+      <button id="bt-bandeja" class="alca" aria-expanded="false" aria-controls="bandeja-conteudo"><span class="alca-pega" aria-hidden="true"></span><span class="alca-rotulo">Busca e índice</span></button>
+      <div id="bandeja-conteudo" class="bandeja-conteudo">
+        <section id="painel-consultar" role="tabpanel" aria-labelledby="aba-consultar" data-painel="consultar"></section>
+        <section id="painel-estudar" role="tabpanel" aria-labelledby="aba-estudar" data-painel="estudar" hidden></section>
+        <section id="painel-treinar" role="tabpanel" aria-labelledby="aba-treinar" data-painel="treinar" hidden></section>
+      </div>
+    </aside>
+
+    <main id="vista">
+      <div id="carregando" class="carregando">Carregando modelos… <span id="progresso">0%</span></div>
+
+      <div class="vistas" role="toolbar" aria-label="Vistas rápidas">
+        <button class="bt" data-vista="anterior">Anterior</button>
+        <button class="bt" data-vista="lateralD">Lateral D</button>
+        <button class="bt" data-vista="lateralE">Lateral E</button>
+        <button class="bt" data-vista="superior">Superior</button>
+        <button class="bt" data-vista="inferior">Inferior</button>
+        <button class="bt" data-vista="posterior">Posterior</button>
+      </div>
+
+      <div class="barra-inferior">
+        <button class="bt" id="bt-reset" title="Voltar à câmera inicial" data-icone="camera">Câmera</button>
+        <button class="bt" id="bt-desfazer" disabled title="Desfazer a última mudança de visibilidade (isolar, roteiro, mostrar ocultas)" data-icone="desfazer">Desfazer</button>
+        <button class="bt" id="bt-ocultas" title="Mostrar as estruturas ocultas das camadas ligadas (as camadas desligadas continuam desligadas)" data-icone="ocultas">Mostrar ocultas</button>
+      </div>
+
+      <div id="offline" class="aviso-offline" role="status" hidden></div>
+    </main>
+
+    <aside id="lateral" class="lateral" aria-label="Ficha e sessão">
+      <section id="info" class="ficha" hidden aria-label="Ficha da estrutura"></section>
+      <section id="quiz" class="sessao" hidden aria-label="Quiz"></section>
+      <section id="pintura" class="sessao pintura" hidden aria-label="Pintura"></section>
+    </aside>
+
+    <footer class="creditos">
+      <details open>
+        <summary data-icone="abrir">Créditos dos modelos</summary>
+        <p>Modelos: BodyParts3D, © The Database Center for Life Science licensed under CC Attribution-Share Alike 2.1 Japan ·
+        Z-Anatomy (Gauthier Kervyn), CC BY-SA 4.0 · Este atlas também é distribuído sob CC BY-SA 4.0 · Material de apoio ao estudo.</p>
+      </details>
+    </footer>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

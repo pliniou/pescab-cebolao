@@ -1,0 +1,25 @@
+# Dependências (npm ci reinstala)
+node_modules/
+
+# Gerados pelo build e pelos testes (npm run build, npm run cobertura)
+dist/
+coverage/
+.vite/
+
+# Downloads interrompidos do pipeline (o cache de dados brutos fica fora do projeto: ATLAS_CACHE ou %LOCALAPPDATA%\atlas3d-cache)
+*.part
+
+# Ferramentas e notas de trabalho locais (assistente de código, revisão de design, produto), fora do repositório público
+CLAUDE.md
+PRODUCT.md
+.claude/
+.impeccable/
+
+# Atalho para abrir o app pela área de trabalho no Windows (uso local)
+Abrir Atlas.cmd
+public/icons/atlas.ico
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
