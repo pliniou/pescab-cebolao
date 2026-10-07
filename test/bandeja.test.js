@@ -2,16 +2,17 @@
 // etiqueta e fita de autoclave na ficha, foco (recuo para o campo), etiquetas 3D (seleção, "a conferir", desvio da
 // lateral e da borda) e ícones SVG.
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import * as THREE from 'three';
 import { criarPainel, nomeBase } from '../src/ui/painel.js';
 import { criarInfo } from '../src/ui/info.js';
 import { icone, aplicarIcones } from '../src/icones.js';
 import { criarSelecao } from '../src/scene/selecao.js';
 import { criarCortes } from '../src/scene/cortes.js';
-import { criarRaioX } from '../src/scene/raiox.js';
+import { criarRaioX, RECUO } from '../src/scene/raiox.js';
 import { criarRotulos } from '../src/scene/rotulos.js';
 import { criarCores } from '../src/scene/cores.js';
-import { criarFoco, MISTURA } from '../src/scene/foco.js';
-import { corDoTema } from '../src/scene/tema3d.js';
+import { criarFoco, oclusoras } from '../src/scene/foco.js';
+import { corDoTema, numeroDoTema } from '../src/scene/tema3d.js';
 import { PRESETS } from '../src/ui/presets.js';
 import { criarModelos, criarViewerFalso, porEn, CAMADAS, DADOS } from './fixtures.js';
 
@@ -227,6 +228,27 @@ describe('ficha: etiqueta e fita de autoclave', () => {
   });
 });
 
+describe('ficha: nota do recuo do foco', () => {
+  it('diz quantas estruturas ficaram translúcidas e "Deixar opacas" devolve; zero esconde a nota', () => {
+    const modelos = criarModelos([porEn('masseter', 'D')]);
+    const m = [...modelos.malhas.values()][0];
+    const el = document.createElement('section');
+    const soltar = vi.fn();
+    const info = criarInfo(el, DADOS.camadas, { aoSoltarRecuo: soltar });
+    info.recuo(3); // sem ficha aberta: nada a fazer
+    info.mostrar(m);
+    const nota = el.querySelector('.nota-recuo');
+    expect(nota.hidden).toBe(true);
+    info.recuo(1);
+    expect(nota.hidden).toBe(false);
+    expect(nota.textContent).toContain('Uma estrutura na frente dela');
+    info.recuo(4);
+    expect(nota.textContent).toContain('4 estruturas na frente dela');
+    el.querySelector('[data-acao="soltar-recuo"]').click();
+    expect(soltar).toHaveBeenCalledTimes(1);
+    expect(nota.hidden).toBe(true);
+  });
+});
 describe('foco', () => {
   it('a estrutura em foco mantém a cor; as outras recuam para o campo; null e reaplicar', () => {
     const modelos = criarModelos([porEn('mandible'), porEn('frontal bone')]);
@@ -239,15 +261,71 @@ describe('foco', () => {
     foco.definir(mand);
     expect(foco.alvo).toBe(mand);
     expect(mand.material.color.equals(mand.material.userData.cor)).toBe(true);
-    const esperado = front.material.userData.cor.clone().lerp(corDoTema('recuo-3d'), MISTURA);
+    const esperado = front.material.userData.cor.clone().lerp(corDoTema('recuo-3d'), numeroDoTema('recuo-mistura'));
     expect(front.material.color.getHex()).toBe(esperado.getHex());
     front.material.userData.cor.set('#ff0000'); // pintura ou modo de cores reescreveu a cor-base
     foco.reaplicar();
-    expect(front.material.color.getHex()).toBe(front.material.userData.cor.clone().lerp(corDoTema('recuo-3d'), MISTURA).getHex());
+    expect(front.material.color.getHex()).toBe(front.material.userData.cor.clone().lerp(corDoTema('recuo-3d'), numeroDoTema('recuo-mistura')).getHex());
     foco.definir(null);
     expect(foco.alvo).toBeNull();
     expect(front.material.color.equals(front.material.userData.cor)).toBe(true);
     expect(viewer.invalidar).toHaveBeenCalledTimes(3);
+  });
+
+  it('no tema escuro o recuo mistura mais campo (o campo noturno é fundo)', () => {
+    const claro = numeroDoTema('recuo-mistura');
+    document.documentElement.style.setProperty('--recuo-mistura', '0.75');
+    expect(numeroDoTema('recuo-mistura')).toBeGreaterThan(claro);
+    document.documentElement.style.removeProperty('--recuo-mistura');
+    expect(() => numeroDoTema('nao-existe')).toThrow('token numérico ausente');
+  });
+
+  // a peça profunda (masseter) atrás de uma estrutura grande (frontal) no eixo da câmera; a mandíbula fica de lado
+  const comPos = (e, pos, tam) => ({ ...e, pos, tam });
+  const cena = () => criarModelos([
+    comPos(porEn('frontal bone'), [0, 0, 0.1], 0.06), comPos(porEn('masseter', 'D'), [0, 0, -0.1], 0.02),
+    comPos(porEn('mandible'), [0.3, 0, 0], 0.02),
+  ]);
+  const de = new THREE.Vector3(0, 0, 1);
+
+  it('oclusoras: acha o que fica entre a câmera e a peça; o que está de lado, oculto ou translúcido não conta', () => {
+    const modelos = cena();
+    const [front, mass, mand] = ['frontal bone', 'masseter', 'mandible'].map((en) => [...modelos.malhas.values()].find((m) => m.userData.info.en === en));
+    expect(oclusoras(mass, de, modelos.malhas.values())).toEqual([front]);
+    expect(oclusoras(front, de, modelos.malhas.values())).toEqual([]); // nada na frente dela
+    front.material.opacity = 0.3; // raio-X da camada: já deixa ver através
+    expect(oclusoras(mass, de, modelos.malhas.values())).toEqual([]);
+    front.material.opacity = 1;
+    front.visible = false;
+    expect(oclusoras(mass, de, modelos.malhas.values())).toEqual([]);
+    expect(oclusoras(mand, de, [mand])).toEqual([]);
+  });
+
+  it('raio-X recua só as estruturas dadas, sem mexer no valor da camada; soltar e mudar a camada desfazem', () => {
+    const modelos = cena();
+    const aviso = vi.fn();
+    const raiox = criarRaioX(modelos, CAMADAS, aviso);
+    const front = [...modelos.malhas.values()].find((m) => m.userData.info.en === 'frontal bone');
+    raiox.recuar([front]);
+    expect(front.material.opacity).toBe(RECUO);
+    expect(front.material.depthWrite).toBe(false);
+    expect(raiox.valor('ossos')).toBe(1);
+    expect(raiox.recuadas).toBe(1);
+    raiox.soltar();
+    expect(front.material.opacity).toBe(1);
+    expect(raiox.recuadas).toBe(0);
+    const avisos = aviso.mock.calls.length;
+    raiox.soltar(); // nada recuado: não avisa
+    expect(aviso.mock.calls.length).toBe(avisos);
+    raiox.recuar([front]);
+    raiox.definir('ossos', 0.5); // o estudante mexeu na camada: ela manda
+    expect(front.material.opacity).toBe(0.5);
+    expect(raiox.recuadas).toBe(0);
+    raiox.recuar([front]); // mais transparente que o recuo não é tocada
+    raiox.definir('ossos', 0.1);
+    raiox.recuar([front]);
+    expect(front.material.opacity).toBe(0.1);
+    expect(raiox.recuadas).toBe(0);
   });
 });
 

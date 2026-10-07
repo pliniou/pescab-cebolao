@@ -117,7 +117,7 @@ export function criarPintura(card, secao, { modelos, cores, selecao, aoIniciar, 
     if (!b) return;
     if (b.dataset.acao === 'pincel') abrir(null);
     else if (b.dataset.acao === 'limpar-tudo') {
-      limparTudo();
+      limparTudo(b);
     } else if (b.dataset.ex != null) abrir(EXERCICIOS[Number(b.dataset.ex)]);
   };
   secao.addEventListener('click', aoClicarSecao);
@@ -187,9 +187,31 @@ export function criarPintura(card, secao, { modelos, cores, selecao, aoIniciar, 
       : `<p class="retorno errado">${icone('errado')}Você escreveu "${esc(resposta)}". O nome é: <b>${esc(r.esperado)}</b></p>${placar}`);
   }
 
-  // Apagar toda a pintura livre (salva no aparelho) sempre pede confirmação, venha do painel ou do cartão do pincel
-  function limparTudo() {
-    if (cores.qtdPintadas && confirm('Apagar toda a pintura?')) { cores.limpar(); aoMudarCores(); }
+  // Apagar toda a pintura livre (salva no aparelho) sempre pede confirmação, venha do painel ou do cartão do pincel.
+  // A confirmação é no próprio botão: o primeiro toque troca o texto por "Confirmar: apagar tudo" e o segundo apaga;
+  // sem o segundo toque em CONFIRMAR ms, o botão volta ao normal. Sem pintura, não há o que apagar.
+  const CONFIRMAR = 4000;
+  function limparTudo(b) {
+    if (!cores.qtdPintadas) return;
+    if (b.dataset.confirmar) {
+      clearTimeout(Number(b.dataset.confirmar));
+      cores.limpar();
+      aoMudarCores();
+      desarmar(b);
+      return;
+    }
+    b.dataset.texto = b.innerHTML;
+    b.textContent = 'Confirmar: apagar tudo';
+    b.classList.add('confirmar');
+    b.dataset.confirmar = String(setTimeout(() => desarmar(b), CONFIRMAR));
+  }
+  function desarmar(b) {
+    if (!b.dataset.confirmar) return;
+    clearTimeout(Number(b.dataset.confirmar));
+    b.innerHTML = b.dataset.texto;
+    b.classList.remove('confirmar');
+    delete b.dataset.confirmar;
+    delete b.dataset.texto;
   }
 
   function paleta() {
@@ -320,6 +342,9 @@ export function criarPintura(card, secao, { modelos, cores, selecao, aoIniciar, 
       aoMudarCores();
     } else aoIniciar(null);
     selecao.interceptar = tocar;
+    card.classList.remove('encaixar'); // a sessão assenta no lugar, como a ficha
+    void card.offsetWidth;
+    card.classList.add('encaixar');
     card.hidden = false;
     tela();
   }
@@ -348,7 +373,7 @@ export function criarPintura(card, secao, { modelos, cores, selecao, aoIniciar, 
     if (a === 'nome-ok') responderNome();
     else if (a === 'nome-pular') caixaNome('');
     else if (a === 'sair') sair();
-    else if (a === 'limpar') limparTudo(); // a pintura livre fica salva no aparelho: apagar pede confirmação
+    else if (a === 'limpar') limparTudo(b); // a pintura livre fica salva no aparelho: apagar pede confirmação
     else if (a === 'conferir') conferir();
     else if (a === 'resposta') resposta();
     else if (a === 'recomecar') {

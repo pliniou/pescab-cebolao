@@ -20,7 +20,7 @@ const embaralhar = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = M
 const contagem = (v) => Array.isArray(v) && v.length >= 2 && v.slice(0, 2).every((n) => Number.isInteger(n) && n >= 0);
 const registro = (v) => (Number.isFinite(v[2]) ? v.slice(0, 3) : v.slice(0, 2));
 const sessao = (h) => h && typeof h === 'object' && Number.isFinite(h.data) && Number.isInteger(h.acertos) && Number.isInteger(h.total) && h.total > 0;
-export function lerDados() {
+function lerDados() {
   let d = {};
   try { d = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch {}
   const porId = {};
@@ -47,20 +47,24 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
   const elegivel = (m) => m.userData.info && !m.userData.info.revisar && !ehGengiva(m);
   let cfg = { modo: 'clique', camadas: ['ossos'], qtd: 10 };
   let st = null;       // sessão: { fila, i, acertos, erradas, respondida, opcoes }
-  let marcadas = [];   // malhas com emissive/ghost aplicados
-  let pulso = null;
+  let marcadas = [];   // { m, token, intensidade }: malhas com a cor de um token (refeitas ao trocar o tema)
+  let pulso = null;    // { m, t }: a estrutura perguntada pulsa alguns ciclos para chamar o olhar e assenta
   let fantasmas = [];  // malhas translúcidas por fantasma(); voltam ao raio-X da camada
 
   // ---------- efeitos visuais ----------
   // token: nome do token de cor no CSS ('certo', 'errado', 'pergunta-3d')
-  function marcar(m, token, intensidade = 0.45) {
+  function pintar({ m, token, intensidade }) {
     corDoTema(token, m.material.color);
     m.material.emissive.copy(m.material.color);
     m.material.emissiveIntensity = intensidade;
-    marcadas.push(m);
+  }
+  function marcar(m, token, intensidade = 0.45) {
+    const marca = { m, token, intensidade };
+    pintar(marca);
+    marcadas.push(marca);
   }
   function limparMarcas() {
-    for (const m of marcadas) {
+    for (const { m } of marcadas) {
       m.material.color.copy(m.material.userData.cor);
       m.material.emissive.copy(PRETO);
       m.material.emissiveIntensity = 1;
@@ -81,9 +85,15 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
       m.material.needsUpdate = true;
     }
   }
-  viewer.tarefas.add(() => {
+  // Pulso: ~3 ciclos e assenta no brilho da marca (a cena volta a ficar parada, sem redesenhar a cada quadro); com
+  // movimento reduzido, a estrutura fica só com o brilho fixo
+  const PULSO = 3.5; // s
+  viewer.tarefas.add((dt) => {
     if (!pulso) return false;
-    pulso.material.emissiveIntensity = 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(performance.now() / 180));
+    pulso.t += dt;
+    const fim = pulso.t >= PULSO || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    pulso.m.material.emissiveIntensity = fim ? 0.55 : 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(pulso.t * 5.6));
+    if (fim) pulso = null;
     return true;
   });
   // aproxima a câmera da estrutura (com margem para mostrar o contexto), mantendo a direção atual
@@ -113,15 +123,27 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
       <label class="liga">Perguntas
         <select name="qtd">${[10, 20, 30, 0].map((n) => `<option value="${n}" ${cfg.qtd === n ? 'selected' : ''}>${n || 'todas'}</option>`).join('')}</select>
       </label>
-      <div class="acoes">
+      <p class="dica sem-camada" hidden>Marque pelo menos uma camada para começar.</p>
+      <div class="acoes fixas">
         <button class="bt primario" data-acao="comecar">Começar</button>
         ${erradasSalvas.length ? `<button class="bt" data-acao="erradas-salvas">Refazer as ${erradasSalvas.length} erradas da última vez</button>` : ''}
         ${paraRevisar.length ? `<button class="bt" data-acao="revisar">Revisar o que mais erro (${paraRevisar.length})</button>` : ''}
       </div>
       ${ult ? `<p class="dica">Último quiz${ult.parcial ? ' (interrompido)' : ''}: ${ult.acertos}/${ult.total} (${Math.round(100 * ult.acertos / ult.total)}%) em ${new Date(ult.data).toLocaleDateString('pt-BR')}.</p>` : ''}
       ${piores.length ? `<p class="dica">Você mais erra: ${piores.map(esc).join('; ')}.</p>` : ''}
+      <p class="dica">Clique na estrutura pede mouse ou toque; pelo teclado, use a múltipla escolha.</p>
       <p class="dica">Itens marcados para revisão no dicionário não entram no quiz.</p>`;
+    conferirCamadas();
   }
+  // Sem camada marcada não há o que perguntar: o Começar desliga e a dica diz por quê
+  function conferirCamadas() {
+    const alguma = !!el.querySelector('input[name="camada"]:checked');
+    const bt = el.querySelector('[data-acao="comecar"]');
+    if (bt) bt.disabled = !alguma;
+    const aviso = el.querySelector('.sem-camada');
+    if (aviso) aviso.hidden = alguma;
+  }
+  el.addEventListener('change', (ev) => { if (ev.target.name === 'camada') conferirCamadas(); });
 
   function lerConfig() {
     const modo = el.querySelector('input[name="modo"]:checked').value;
@@ -138,7 +160,7 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
       embaralhar(fila);
       if (cfg.qtd) fila = fila.slice(0, cfg.qtd);
     }
-    if (!fila.length) { alert('Escolha pelo menos uma camada com estruturas.'); return; }
+    if (!fila.length) { conferirCamadas(); return; } // o Começar já fica desligado sem camada; aqui é só a garantia
     const camadas = ids ? [...new Set(fila.map((m) => m.userData.camada))] : cfg.camadas;
     aoIniciar(camadas);
     st = { fila, i: 0, acertos: 0, erradas: [], camadas, respostas: [], raiox: false };
@@ -215,7 +237,7 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
       st.opcoes = embaralhar([alvo, ...distratores]);
       fantasma(alvo);
       marcar(alvo, 'pergunta-3d');
-      pulso = alvo;
+      pulso = { m: alvo, t: 0 };
       enquadrar(alvo);
       el.innerHTML = `${cabecalho('Qual é a estrutura destacada?')}
         <div class="opcoes">${st.opcoes.map((m, k) => `<button class="bt opcao" data-opcao="${k}">${esc(m.userData.info.pt)}</button>`).join('')}</div>
@@ -253,7 +275,7 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
     const r = el.querySelector('.retorno');
     r.className = `retorno ${certo ? 'certo' : 'errado'}`;
     r.innerHTML = certo ? `${icone('certo')}Correto!`
-      : `${icone('errado')}${clicada ? `Você marcou: <b>${esc(clicada.userData.info?.pt || clicada.userData.id)}</b>. ` : ''}A resposta é <b>${esc(alvo.userData.info.pt)}</b> (em verde).`;
+      : `${icone('errado')}${clicada ? `Você marcou: <b>${esc(clicada.userData.info?.pt || clicada.userData.id)}</b>. ` : ''}A resposta é <b>${esc(alvo.userData.info.pt)}</b>, destacada no modelo.`;
     const acoes = el.querySelector('.acoes') || el.appendChild(Object.assign(document.createElement('div'), { className: 'acoes' }));
     acoes.innerHTML = `<button class="bt primario" data-acao="proxima">${st.i + 1 < st.fila.length ? 'Próxima' : 'Ver resultado'}</button>`;
     acoes.querySelector('button').focus();
@@ -337,6 +359,11 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
   return {
     // camadas: abre a configuração já com essas camadas marcadas (o "Quiz de …" da ficha)
     abrir({ camadas } = {}) {
+      if (el.hidden) { // a sessão assenta no lugar, como a ficha (CSS; respeita o movimento reduzido)
+        el.classList.remove('encaixar');
+        void el.offsetWidth;
+        el.classList.add('encaixar');
+      }
       el.hidden = false;
       selecao.interceptar = tocar;
       if (camadas?.length && !st) cfg = { ...cfg, camadas };
@@ -344,5 +371,7 @@ export function criarQuiz(el, { dados, modelos, ordem, viewer, selecao, raiox, a
     },
     get ativo() { return !el.hidden; },
     sair,
+    // o tema mudou: as marcas (pergunta, certo, errado) voltam a ler os tokens do tema novo
+    redestacar() { for (const marca of marcadas) pintar(marca); },
   };
 }

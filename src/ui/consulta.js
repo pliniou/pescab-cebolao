@@ -10,7 +10,7 @@ const LADO = { D: 'direito', E: 'esquerdo', M: 'mediano' };
 
 // Ordena por relevância: número FDI exato (o dente "12" antes de qualquer código que contenha 12), nome começando pela
 // busca, uma palavra do nome começando por ela, códigos (FMA, id) começando por ela e, por fim, o resto do texto
-export function pontuar(e, nome, texto, codigos, q) {
+function pontuar(e, nome, texto, codigos, q) {
   if (e.fdi === q) return 0;
   if (nome.startsWith(q)) return 1;
   if (nome.split(' ').some((p) => p.startsWith(q))) return 2;
@@ -55,13 +55,18 @@ export function criarConsulta(el, { dados, modelos, ordem, selecao, aoEscolher }
   const contagem = el.querySelector('.contagem');
   const indice = el.querySelector('.indice-consulta');
 
+  // Empate na relevância: a camada na ordem do índice (ossos, dentes, músculos, nervos antes de artérias e veias: em
+  // "alveolar inferior" o nervo vem antes da artéria), depois o nome
+  const posCamada = new Map(ordem.map((c, i) => [c, i]));
   function buscar(texto) {
     const q = normalizar(texto.trim());
     if (!q) return null;
     return todas
       .map((m) => { const b = indiceBusca.get(m); return { m, p: pontuar(b.e, b.nome, b.texto, b.codigos, q) }; })
       .filter((r) => r.p >= 0)
-      .sort((a, b) => a.p - b.p || (a.m.userData.info?.pt || '').localeCompare(b.m.userData.info?.pt || '', 'pt-BR'))
+      .sort((a, b) => a.p - b.p
+        || posCamada.get(a.m.userData.camada) - posCamada.get(b.m.userData.camada)
+        || (a.m.userData.info?.pt || '').localeCompare(b.m.userData.info?.pt || '', 'pt-BR'))
       .map((r) => r.m);
   }
 

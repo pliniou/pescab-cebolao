@@ -1,11 +1,16 @@
 // Rótulos CSS2D: um por estrutura, ancorado no vértice mais próximo do centro da caixa (acompanha a explosão).
 // Só aparecem para estruturas visíveis e não cortadas. Para não amontoar, rótulos que se sobreporiam a outro
 // já colocado são ocultados (a estrutura selecionada tem prioridade, depois as mais próximas da câmera), assim como os
-// que cruzariam um cartão ou uma barra sobre a prancha (seriam cortados por eles).
-// O arranjo só é recalculado quando a cena muda (viewer.aoInvalidar), no máximo a cada INTERVALO segundos.
+// que cruzariam a lateral (no tablet ela desce sobre a vista) ou as réguas da vista (seriam cortados por elas).
+// Com os rótulos desligados, só a estrutura selecionada ganha etiqueta; cada rótulo é criado quando precisa aparecer.
+// O arranjo só é recalculado quando a cena muda (viewer.aoInvalidar) e para de mudar por QUIETO segundos: durante um
+// giro, uma explosão ou o arraste de um controle os rótulos acompanham a peça e o arranjo sai uma vez, no fim (um
+// arranjo com todas as camadas custa dezenas de ms e, a cada 200 ms, travava o giro). Num movimento longo, ele sai
+// mesmo assim a cada ESPERA_MAX segundos.
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { visivel } from '../util.js';
+import { INVISIVEL } from './raiox.js';
 
 const ALTURA = 19;   // px (aprox.; condensada em caixa alta a 13 px, com o respiro da etiqueta)
 const LARGURA_LETRA = 7; // px por letra: caixa alta com entreletra de 0,05em
@@ -13,8 +18,12 @@ const CHAMADA = 14;  // px, linha de chamada entre o rótulo e a peça (igual a 
 const CHAMADA_SELECIONADA = 40; // px, a da estrutura selecionada (.rotulo.selecionado no CSS)
 // Elementos que nenhum rótulo deve cruzar: as réguas da vista e a lateral (que no tablet desce sobre a vista; no
 // desktop e no celular ela fica fora do canvas e não colide com nada)
-const OBSTACULOS = '.lateral, .vistas, .barra-inferior > *';
-const INTERVALO = 0.2; // s
+const OBSTACULOS = '.lateral, .vistas, .barra-inferior > *, .avisos > :not([hidden])';
+const QUIETO = 0.12;     // s sem mudança na cena antes de arranjar
+const ESPERA_MAX = 1;    // s: num movimento contínuo, arranja ao menos nesse intervalo
+// Teste de oclusão (raios contra o modelo) é o custo do arranjo: só os candidatos mais prioritários que já cabem na
+// tela passam por ele; os outros ficariam escondidos pela sobreposição de qualquer forma
+const MAX_OCLUSAO = 24;
 
 export function criarRotulos(viewer, modelos, cortes) {
   let ligado = false;
@@ -67,14 +76,17 @@ export function criarRotulos(viewer, modelos, cortes) {
     return ray.intersectObjects(opacas, false).some((h) => h.object !== it.m && cortes.mantem(h.point));
   }
 
-  let espera = 0;
-  viewer.aoInvalidar.add(() => { pendente = true; });
+  let quieto = 0;   // s desde a última mudança da cena
+  let atraso = 0;   // s desde que há arranjo pendente
+  viewer.aoInvalidar.add(() => { pendente = true; quieto = 0; });
   viewer.tarefas.add((dt) => {
-    espera -= dt;
     // desligados, só a etiqueta da estrutura selecionada aparece
-    if ((!ligado && !selecionada) || !pendente || espera > 0) return false;
-    espera = INTERVALO;
+    if ((!ligado && !selecionada) || !pendente) { atraso = 0; return false; }
+    quieto += dt;
+    atraso += dt;
+    if (quieto < QUIETO && atraso < ESPERA_MAX) return false;
     pendente = false;
+    atraso = 0;
     arranjar();
     return true; // a visibilidade dos rótulos mudou: redesenhar
   });
@@ -95,7 +107,7 @@ export function criarRotulos(viewer, modelos, cortes) {
     for (const it of itens) {
       it.obj.visible = false;
       if (!ligado && it.m !== selecionada) continue;
-      if (!visivel(it.m) || it.m.material.opacity <= 0.05) continue;
+      if (!visivel(it.m) || it.m.material.opacity <= INVISIVEL) continue;
       it.obj.getWorldPosition(w);
       if (!cortes.mantem(w)) continue;
       const dist = w.distanceToSquared(camera.position);
@@ -104,13 +116,16 @@ export function criarRotulos(viewer, modelos, cortes) {
       candidatos.push({ it, x: (w.x + 1) / 2 * W, y: (1 - w.y) / 2 * H, prio: it.m === selecionada ? -1 : dist });
     }
     candidatos.sort((a, b) => a.prio - b.prio);
+    let testes = 0;
     for (const c of candidatos) {
       // caixa do rótulo mais a linha de chamada, até a âncora
       const chamada = c.it.m === selecionada ? CHAMADA_SELECIONADA : CHAMADA;
       const r = { x0: c.x - c.it.larg / 2, x1: c.x + c.it.larg / 2, y0: c.y - chamada - ALTURA, y1: c.y };
-      if (r.x0 < 0 || r.x1 > W || r.y0 < 0 || r.y1 > H) continue; // inteiro dentro da prancha, ou nada
+      if (r.x0 < 0 || r.x1 > W || r.y0 < 0 || r.y1 > H) continue; // inteiro dentro da vista, ou nada
       if (postos.some((p) => r.x0 < p.x1 && r.x1 > p.x0 && r.y0 < p.y1 && r.y1 > p.y0)) continue;
       if (c.it.m !== selecionada) {
+        if (testes >= MAX_OCLUSAO) break;
+        testes++;
         opacas ??= [...modelos.malhas.values()].filter((m) => visivel(m) && m.material.opacity >= 0.5);
         if (oculto(c.it, c.it.obj.getWorldPosition(pos), opacas)) continue;
       }
@@ -119,11 +134,10 @@ export function criarRotulos(viewer, modelos, cortes) {
     }
   }
 
-  // Mudança que vale na hora (sem esperar o intervalo)
+  // Mudança que vale na hora (sem esperar a cena aquietar)
   function refazer() {
-    pendente = true;
-    espera = 0;
     viewer.invalidar();
+    quieto = QUIETO;
   }
 
   return {

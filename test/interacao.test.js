@@ -156,16 +156,18 @@ describe('rótulos', () => {
     expect(itens().every((o) => o.visible)).toBe(true);
   });
 
-  it('só recalcula quando a cena muda, respeitando o intervalo', () => {
+  it('só recalcula quando a cena muda e para de mudar; um movimento longo recalcula a cada segundo', () => {
     rotulos.definir(true);
-    viewer.quadro();
+    expect(viewer.quadro()).toBe(true); // ligar vale na hora
     expect(viewer.quadro(1)).toBe(false); // nada mudou
     viewer.invalidar();
-    expect(viewer.quadro(0.05)).toBe(true); // depois de parada, a primeira mudança vale na hora
-    viewer.invalidar();
-    expect(viewer.quadro(0.05)).toBe(false); // mudanças seguidas esperam o intervalo
-    expect(viewer.quadro(0.05)).toBe(false);
-    expect(viewer.quadro(0.15)).toBe(true);
+    expect(viewer.quadro(0.05)).toBe(false); // a cena acabou de mudar: espera aquietar
+    expect(viewer.quadro(0.1)).toBe(true);   // quieta: arranja uma vez
+    expect(viewer.quadro(0.1)).toBe(false);
+    // giro contínuo: muda a cada quadro, então só arranja quando passa o tempo máximo
+    let arranjos = 0;
+    for (let i = 0; i < 70; i++) { viewer.invalidar(); if (viewer.quadro(0.016)) arranjos++; }
+    expect(arranjos).toBe(1); // ~1,1 s de giro
   });
 
   it('estrutura oculta perde o rótulo; desligar esconde todos', () => {
@@ -284,6 +286,9 @@ describe('modos (quiz e exercícios)', () => {
     expect(cortes.estado.sagital).toEqual({ ativo: true, valor: 0.02, inverter: true });
     expect(rotulos.ligado).toBe(true);
     expect(viewer.deslocar).toHaveBeenLastCalledWith(0);
+    // a câmera volta para onde estava antes do modo (o quiz enquadra cada resposta)
+    expect(viewer.voltarPara).toHaveBeenCalledTimes(1);
+    expect(viewer.voltarPara.mock.calls[0][0].p.toArray()).toEqual([0, 0, 1]);
   });
 
   it('um "Desfazer" apertado durante o modo não desalinha a restauração', () => {
@@ -349,8 +354,15 @@ describe('modos (quiz e exercícios)', () => {
     expect(fechar).not.toHaveBeenCalled();
   });
 
+  it('deitado a sessão ocupa a coluna da bandeja: a vista não se desloca e nada recolhe', () => {
+    vi.stubGlobal('matchMedia', (q) => ({ matches: q.includes('max-height: 500px') || q === '(max-width: 760px)' }));
+    modos.entrar({ camadas: { musculos: 1 }, mostrar: () => true });
+    expect(viewer.deslocar).toHaveBeenLastCalledWith(0);
+    expect(fechar).not.toHaveBeenCalled();
+  });
+
   it('no celular a sessão é uma folha que encolhe a vista (sem deslocar) e recolhe a bandeja; enquadrar usa só o visível', () => {
-    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    vi.stubGlobal('matchMedia', (q) => ({ matches: q === '(max-width: 760px)' }));
     modos.entrar({ camadas: { musculos: 1 }, mostrar: () => true, enquadrar: true });
     expect(viewer.deslocar).toHaveBeenLastCalledWith(0);
     expect(fechar).toHaveBeenCalled();

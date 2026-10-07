@@ -55,6 +55,9 @@ export function criarViewerFalso({ largura = 100, altura = 100 } = {}) {
     deslocar: vi.fn(),
     enquadrarCaixa: vi.fn(),
     resetar: vi.fn(),
+    // a câmera falsa não anima: o destino é onde ela está, e voltar só registra o pedido
+    destino: () => ({ p: camera.position.clone(), a: new THREE.Vector3() }),
+    voltarPara: vi.fn(),
     // roda as tarefas de um quadro; devolve true se alguma pediu redesenho
     quadro(dt = 0.016) { let r = false; for (const f of viewer.tarefas) if (f(dt)) r = true; return r; },
   };

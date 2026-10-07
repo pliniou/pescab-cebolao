@@ -16,25 +16,25 @@
   <div id="app" data-modo="consultar">
     <header class="barra">
       <h1 class="marca">Atlas Cabeça e Pescoço</h1>
-      <nav class="modos" role="tablist" aria-label="Modo">
-        <button role="tab" id="aba-consultar" data-modo="consultar" aria-controls="painel-consultar" aria-selected="true">Consultar</button>
-        <button role="tab" id="aba-estudar" data-modo="estudar" aria-controls="painel-estudar" aria-selected="false" tabindex="-1">Estudar</button>
-        <button role="tab" id="aba-treinar" data-modo="treinar" aria-controls="painel-treinar" aria-selected="false" tabindex="-1">Treinar</button>
-      </nav>
-      <button id="bt-tema" class="bt icone-so" title="Tema claro ou escuro" aria-label="Alternar tema" data-icone="tema"></button>
+      <div class="modos" role="tablist" aria-label="Modo">
+        <button role="tab" id="aba-consultar" data-modo="consultar" aria-controls="painel-consultar" aria-selected="true" title="Buscar uma estrutura e ver a ficha">Consultar</button>
+        <button role="tab" id="aba-estudar" data-modo="estudar" aria-controls="painel-estudar" aria-selected="false" tabindex="-1" title="Roteiros, camadas, cortes e explosão">Estudar</button>
+        <button role="tab" id="aba-treinar" data-modo="treinar" aria-controls="painel-treinar" aria-selected="false" tabindex="-1" title="Quiz e exercícios de pintura com correção">Treinar</button>
+      </div>
+      <button id="bt-tema" class="bt icone-so" title="Tema escuro" aria-label="Tema escuro" aria-pressed="false" data-icone="tema"></button>
     </header>
 
     <aside id="bandeja" class="bandeja" aria-label="Bandeja do modo">
       <button id="bt-bandeja" class="alca" aria-expanded="false" aria-controls="bandeja-conteudo"><span class="alca-pega" aria-hidden="true"></span><span class="alca-rotulo">Busca e índice</span></button>
       <div id="bandeja-conteudo" class="bandeja-conteudo">
-        <section id="painel-consultar" role="tabpanel" aria-labelledby="aba-consultar" data-painel="consultar"></section>
-        <section id="painel-estudar" role="tabpanel" aria-labelledby="aba-estudar" data-painel="estudar" hidden></section>
-        <section id="painel-treinar" role="tabpanel" aria-labelledby="aba-treinar" data-painel="treinar" hidden></section>
+        <section id="painel-consultar" role="tabpanel" aria-labelledby="aba-consultar" data-painel="consultar"><p class="dica preparando">Preparando a busca e o índice…</p></section>
+        <section id="painel-estudar" role="tabpanel" aria-labelledby="aba-estudar" data-painel="estudar" hidden><p class="dica preparando">Preparando as ferramentas de estudo…</p></section>
+        <section id="painel-treinar" role="tabpanel" aria-labelledby="aba-treinar" data-painel="treinar" hidden><p class="dica preparando">Preparando o quiz e os exercícios…</p></section>
       </div>
     </aside>
 
     <main id="vista">
-      <div id="carregando" class="carregando">Carregando modelos… <span id="progresso">0%</span></div>
+      <div id="carregando" class="carregando" role="status">Carregando modelos… <span id="progresso">0%</span></div>
 
       <div class="vistas" role="toolbar" aria-label="Vistas rápidas">
         <button class="bt" data-vista="anterior">Anterior</button>
@@ -51,7 +51,11 @@
         <button class="bt" id="bt-ocultas" title="Mostrar as estruturas ocultas das camadas ligadas (as camadas desligadas continuam desligadas)" data-icone="ocultas">Mostrar ocultas</button>
       </div>
 
-      <div id="offline" class="aviso-offline" role="status" hidden></div>
+      <div class="avisos">
+        <p id="dica-gestos" class="aviso dica-gestos" hidden></p>
+        <div id="offline" class="aviso" role="status" hidden></div>
+      </div>
+      <p id="anuncio" class="so-leitor" role="status"></p>
     </main>
 
     <aside id="lateral" class="lateral" aria-label="Ficha e sessão">

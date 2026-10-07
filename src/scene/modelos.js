@@ -26,10 +26,24 @@ export async function carregarModelos(scene, camadas, porId, aoProgredir) {
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const grupos = {};
   const malhas = new Map();
-  let feitos = 0;
+  // progresso por bytes: as camadas baixam juntas e têm tamanhos muito diferentes (glândulas ~35 kB, nervos ~680 kB),
+  // então contar camadas prontas parava o número enquanto as grandes chegavam
+  const baixado = Object.fromEntries(camadas.map((c) => [c, { feito: 0, total: 0 }]));
+  const avisar = () => {
+    const bs = Object.values(baixado);
+    // com o tamanho de todas conhecido, conta bytes; senão (servidor sem Content-Length), camadas prontas
+    if (bs.every((b) => b.total)) aoProgredir?.(bs.reduce((s, b) => s + Math.min(b.feito, b.total), 0) / bs.reduce((s, b) => s + b.total, 0));
+    else aoProgredir?.(bs.filter((b) => b.pronta).length / bs.length);
+  };
   await Promise.all(camadas.map(async (camada) => {
     let gltf;
-    try { gltf = await loader.loadAsync(`${import.meta.env.BASE_URL}models/${camada}.glb`); }
+    const b = baixado[camada];
+    const progresso = (ev) => {
+      if (!ev.lengthComputable) return;
+      b.feito = ev.loaded; b.total = ev.total;
+      avisar();
+    };
+    try { gltf = await loader.loadAsync(`${import.meta.env.BASE_URL}models/${camada}.glb`, progresso); }
     // a camada vai no erro: main.js diz ao usuário qual arquivo faltou
     catch (erro) { throw Object.assign(new Error(`não foi possível carregar a camada "${camada}"`, { cause: erro }), { camada }); }
     const grupo = new THREE.Group();
@@ -44,7 +58,9 @@ export async function carregarModelos(scene, camadas, porId, aoProgredir) {
     }
     scene.add(grupo);
     grupos[camada] = grupo;
-    aoProgredir?.(++feitos / camadas.length);
+    b.pronta = true;
+    b.feito = b.total; // pronta conta inteira (o último evento de progresso pode não chegar a 100%)
+    avisar();
   }));
   return { grupos, malhas };
 }

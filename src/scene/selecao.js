@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { visivel } from '../util.js';
 import { corDoTema } from './tema3d.js';
+import { INVISIVEL } from './raiox.js';
 
 const TOLERANCIA_PX = 6;
 const TEMPO_TOQUE = 500;   // ms
@@ -24,7 +25,7 @@ export function criarSelecao(viewer, modelos, { aoSelecionar, aoMudarIsolamento,
     const r = el.getBoundingClientRect();
     ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
-    const alvos = [...modelos.malhas.values()].filter((m) => visivel(m) && m.material.opacity > 0.05);
+    const alvos = [...modelos.malhas.values()].filter((m) => visivel(m) && m.material.opacity > INVISIVEL);
     return ray.intersectObjects(alvos, false).filter((h) => !filtroPonto || filtroPonto(h.point));
   }
   function escolher(hits) {

@@ -1,9 +1,9 @@
 // Modos que reorganizam a cena (quiz e exercícios de pintura). Ao entrar, guarda tudo o que o modo altera
-// (visibilidade, raio-X, cortes e rótulos); ao sair, devolve a cena como estava. Trocar de um modo para outro
+// (visibilidade, raio-X, cortes, rótulos e a câmera); ao sair, devolve a cena como estava. Trocar de um modo para outro
 // passa pela saída do primeiro, então só existe um estado salvo por vez.
 import { PLANOS } from '../scene/cortes.js';
 import { caixaDosObjetos } from '../scene/viewer.js';
-import { ehCelular, ehLargo } from '../util.js';
+import { ehCelular, lateralSobreVista } from '../util.js';
 
 export function criarModos({ viewer, modelos, ordem, selecao, cortes, raiox, rotulos, painel, fecharPainel }) {
   let salvo = null;
@@ -19,6 +19,7 @@ export function criarModos({ viewer, modelos, ordem, selecao, cortes, raiox, rot
         raiox: raiox.salvar(),
         cortes: structuredClone(cortes.estado),
         rotulos: rotulos.ligado,
+        camera: viewer.destino(), // o quiz enquadra cada resposta; ao sair, a câmera volta para onde estava
       };
     }
     if (ocultarRotulos) painel.definirRotulos(false); // rótulos entregariam as respostas
@@ -29,9 +30,9 @@ export function criarModos({ viewer, modelos, ordem, selecao, cortes, raiox, rot
     for (const m of modelos.malhas.values()) m.visible = mostrar(m);
     for (const k of Object.keys(PLANOS)) cortes.definir(k, { ativo: false });
     const celular = ehCelular();
-    // a sessão tem lugar próprio no desktop (coluna) e no celular (folha que encolhe a vista); só no tablet ela cobre o
-    // canto de baixo da vista, que então sobe para o espaço livre
-    viewer.deslocar(celular || ehLargo() ? 0 : 0.17);
+    // a sessão tem lugar próprio no desktop (coluna), no celular (folha que encolhe a vista) e deitado (coluna à
+    // esquerda); só no tablet em pé ela cobre o canto de baixo da vista, que então sobe para o espaço livre
+    viewer.deslocar(lateralSobreVista() ? 0.17 : 0);
     if (enquadrar) {
       const caixa = caixaDosObjetos([...modelos.malhas.values()].filter((m) => m.visible && m.parent.visible));
       if (!caixa.isEmpty()) viewer.enquadrarCaixa(caixa, 'reset');
@@ -53,6 +54,7 @@ export function criarModos({ viewer, modelos, ordem, selecao, cortes, raiox, rot
     for (const [k, e] of Object.entries(s.cortes)) cortes.definir(k, e);
     painel.definirRotulos(s.rotulos);
     selecao.restaurar(s.visibilidade);
+    viewer.voltarPara(s.camera);
     painel.sincronizarControles();
     painel.sincronizar();
   }

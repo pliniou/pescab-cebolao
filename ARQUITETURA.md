@@ -1,6 +1,6 @@
 # Arquitetura do Atlas Cabeça e Pescoço
 
-Mapa das relações entre módulos (PWA estático, JavaScript puro, pipeline Node + Blender). Levantamento inicial em 2026-10-06 por leitura de todo o `src/` e dos pontos de leitura e escrita do `pipeline/`; os diagramas refletem o código depois da implementação das melhorias da seção 8, que registra o que mudou em cada item. A seção 7 descreve o design system ("Bandeja Clínica", que substituiu a "Prancha Anotada" na refundação da interface): de onde vêm os tokens, quem os consome e o que garante que nada saia dele.
+Mapa das relações entre módulos (PWA estático, JavaScript puro, pipeline Node + Blender). Levantamento inicial em 2026-10-06 por leitura de todo o `src/` e dos pontos de leitura e escrita do `pipeline/`; os diagramas refletem o código atual. A seção 8 resume testes, pendências e decisões em vigor; o histórico de cada mudança está no git. A seção 7 descreve o design system ("Bandeja Clínica", que substituiu a "Prancha Anotada" na refundação da interface): de onde vêm os tokens, quem os consome e o que garante que nada saia dele.
 
 ## 1. Visão geral: duas metades ligadas por artefatos
 
@@ -156,7 +156,7 @@ Contratos compartilhados que não aparecem nos imports:
 | `material.userData.corOriginal` | `cores.js` | `painel.js` |
 | `material.emissive` / `material.color` (destaque) | `selecao.js`, `quiz.js`, `foco.js` (só `color`), sempre com a cor de um token via `corDoTema` | todos voltam de `material.userData.cor`; `foco.reaplicar()` refaz o recuo quando a cor-base muda |
 | `material.opacity/transparent/depthWrite` | `raiox.js` (`aplicarOpacidade`) e o fantasma de `quiz.js` | `selecao.js`, `rotulos.js` (opacas ≥ 0,5) |
-| `viewer.tarefas` (por quadro; `true` = redesenhar) | `explosao.js`, `rotulos.js`, `quiz.js` | laço de `viewer.js` |
+| `viewer.tarefas` (por quadro; `true` = redesenhar) | `explosao.js`, `rotulos.js` (arranjo quando a cena aquieta), `quiz.js` (pulso de ~3,5 s), `viewer.js` (deslocamento da imagem) | laço de `viewer.js` |
 | `viewer.invalidar` / `viewer.aoInvalidar` | interações, controles, resize, `cortes.js`, `explosao.js`, `raiox.js`, `rotulos.js` | `rotulos.js` (rearranjo), laço de `viewer.js` |
 | `selecao.interceptar` (consome o toque) | `quiz.js`, `pintura.js` | `selecao.js` |
 | tokens do design system (`--*` em `:root`) | `src/style.css` (fonte única) | regras do CSS, `tema3d.js`, `pipeline/tokens.mjs` (ícones e manifesto), `main.js` (`theme-color`); conferidos em `test/design-system.test.js` |
@@ -226,6 +226,9 @@ O que cada modo salva e restaura (tudo em `ui/modos.js`, exceto as cores):
 | Cortes | salvos e restaurados | salvos e restaurados | substitui |
 | Cores e pintura | não mexe | `cores.iniciarTemporario()` | não mexe |
 | Rótulos | desliga e religa ao sair | não mexe | não mexe |
+| Câmera | `viewer.destino/voltarPara` | `viewer.destino/voltarPara` | enquadra (não volta) |
+
+O foco por nome também mexe na opacidade, mas só das estruturas que cobrem a peça (`raiox.recuar`, sem tocar no valor das camadas); qualquer nova seleção, ou nenhuma, começa com `raiox.soltar()`, e entrar num modo passa por `selecionar(null)` antes de `raiox.salvar()`.
 
 ## 6. Laço de renderização (sob demanda)
 
@@ -305,91 +308,19 @@ O que garante que o sistema continue inteiro:
 
 Exceções registradas, que não são tokens por natureza: fios de 1 px; geometria de desenho (ponto da linha de chamada, recuo da régua igual ao raio do cursor nativo, faixa listrada da fita, pega da alça, ajuste de linha de base de ícone); luzes da cena 3D (iluminação, não cor do sistema); a paleta de pintura (`PALETA`), que é conteúdo do estudante, salvo no aparelho, e não cor de interface.
 
-## 8. Melhorias: o que foi feito
-
-Cada item da análise inicial, com a decisão anti-retrabalho aplicada e a verificação.
-
-| # | Item | Decisão | O que mudou | Verificação |
-|---|---|---|---|---|
-| 1 | Renderização contínua mesmo parada | `ESTENDER_EXISTENTE` | `viewer.js`: flag "suja", `invalidar()`/`aoInvalidar`, tarefas devolvem `true` para redesenhar; interações capturadas em `window` invalidam a cena | `test/viewer.test.js` (parada não desenha; invalidar, interação, tarefa e animação desenham); no navegador, 0 quadros com a cena parada |
-| 2 | Rótulos recalculados sem necessidade | `ESTENDER_EXISTENTE` | `rotulos.js` rearranja só quando a cena mudou (`aoInvalidar`), no máximo a cada 0,2 s; lista de opacas só se algum rótulo precisar do teste de oclusão | `test/interacao.test.js` (rótulos) |
-| 3 | Bundle único de 812 KB | `ESTENDER_EXISTENTE` | `vite.config.js`: `codeSplitting` separa o three.js; app 151 kB, three.js 662 kB; limite de aviso calibrado para o chunk do three.js | `npm run build` |
-| 4 | Pipeline do zero não rodava sozinho | `ESTENDER_EXISTENTE` | `03a` roda `za_listar.py` quando falta `work/za_objetos.json` e para com mensagem clara se faltar o `Startup.blend`; `za_listar.py` restaurado; `03-filtrar` renomeado para `03c-filtrar` (ordem de execução = ordem dos nomes) | `node --check`; README |
-| 5 | Nomes em inglês como chave frágil | `ESTENDER_EXISTENTE` | grupos dos exercícios viraram listas `en: [...]` (função só para critério por FDI); `MEDIANOS` exportado; `test/integridade.test.js` confere todos os nomes contra o dicionário; o `npm run pipeline` roda os testes no fim | `npm test` |
-| 6 | Raio-X mexido durante pergunta era desfeito | `ISOLAR_EXISTENTE` | opacidade por camada isolada de `main.js` em `scene/raiox.js`; o fantasma do quiz volta com `raiox.restaurarMalha` | teste de regressão em `test/ui.test.js` |
-| 7 | Cortes e rótulos perdidos ao sair de quiz/exercício | `ESTENDER_EXISTENTE` | `ui/modos.js` salva e restaura cortes e rótulos junto com visibilidade e raio-X | `test/interacao.test.js` (modos); no navegador, estado idêntico após sair do quiz |
-| 8 | "Mostrar tudo" não ligava camadas | renomear | comportamento mantido (camadas são do painel), nome corrigido: botão "Mostrar ocultas" (`#bt-ocultas`) e `selecao.mostrarOcultas()` | `test/interacao.test.js` |
-| 9 | Código morto e comentário desatualizado | remover / corrigir | ramo `resultado` do quiz e argumento ignorado removidos; o enquadramento dos roteiros agora respeita os cortes (`cortes.recortar`), como o comentário dizia | `test/interacao.test.js` (roteiros) |
-| 10 | Entrar/sair de modo duplicado em `main.js` | `ISOLAR_EXISTENTE` | `ui/modos.js` (`entrar`/`sair`), com captura de visibilidade própria: um "Desfazer" durante o modo não desalinha mais a restauração | `test/interacao.test.js` |
-| 11 | Enquadrar o visível duas vezes | `CONSOLIDAR_EXISTENTES` | `caixaDosObjetos` em `viewer.js`, usado por `modos.js` e `presets.js` | testes de modos e roteiros |
-| 12 | Utilitários copiados | `CRIAR_NOVO` | `src/util.js` (`esc`, `semAcentos`, `normalizar`, `visivel`, `ehCelular`) substitui 4 cópias de `esc`, 2 de `visivel`, 5 testes de `matchMedia` e 2 normalizações | `test/util.test.js` |
-| 13 | Sem testes | `CRIAR_NOVO` | Vitest + happy-dom + cobertura v8; 10 arquivos em `test/`, incluindo a integridade do design system | ver abaixo |
-
-Achados durante a implementação, também corrigidos:
-
-- `THREE.Clock` está obsoleto no three.js 0.186 e gerava aviso no console a cada carregamento: trocado por `THREE.Timer` (ligado à visibilidade da página).
-- `07-referencias.mjs` falhava com o cache vazio (não criava a pasta antes de baixar o CSV de Howells).
-- `@gltf-transform/cli` era dependência sem uso e trazia 3 vulnerabilidades altas: removida (`npm audit` = 0).
-- `renderer.localClippingEnabled` estava ligado sem nenhum plano local (os cortes são globais): removido.
-
-### Correções da auditoria pós-refundação (lote 1)
-
-| Problema | Decisão | O que mudou | Verificação |
-|---|---|---|---|
-| Busca por número FDI punha outra estrutura primeiro ("12" → Atlas C1) | `ESTENDER_EXISTENTE` | `pontuar` em `ui/consulta.js`: FDI exato primeiro; FMA e id só pelo começo | `ui.test.js` (posição de todos os dentes) |
-| Rótulos ligados entregavam a resposta no exercício com nome | `REUTILIZAR_EXISTENTE` | `ocultarRotulos: true` também nos exercícios (`main.js`) | navegador |
-| Modo atlas repetia cores entre camadas (deslocamento pelo tamanho do nome) | `ESTENDER_EXISTENTE` | `scene/cores.js`: uma sequência de ângulo áureo para o modelo inteiro; estado salvo validado (modo, hex, ids que existem) | `cena.test.js` (nenhuma cor repetida no modelo real) |
-| Enquadramento inicial e "Câmera" cortavam o crânio em retrato | `CONSOLIDAR_EXISTENTES` | `distanciaPara` em `viewer.js` usada por enquadrar, reset, `enquadrarCaixa` e `aproximar`; caixa vazia ignorada; arrastar cancela a animação; movimento reduzido vai direto (câmera e explosão) | `viewer.test.js`, `cena.test.js` |
-| Trocar de aba descartava o quiz sem gravar | `ESTENDER_EXISTENTE` | `gravarSessao(parcial)` em `quiz.js`: sair no meio grava erradas e histórico marcado "interrompido" | `ui.test.js` |
-| Dado salvo em formato errado travava o quiz | `ESTENDER_EXISTENTE` | `lerDados` valida campo a campo; "Refazer as N" conta só as que ainda valem; foco vai ao título ou à primeira opção a cada pergunta | `ui.test.js` |
-| Desfazer depois do modo voltava à cena da sessão | `ESTENDER_EXISTENTE` | `selecao.cortarPilha(n)`; `modos` guarda o nível ao entrar e corta ao sair | `interacao.test.js` |
-| Nota do roteiro sumia no celular | `REUTILIZAR_EXISTENTE` | no celular a nota vai para o aviso da vista (`avisar`, com tempo proporcional ao texto) | navegador |
-
-### Correções da auditoria pós-refundação (lote 2: robustez e acessibilidade)
-
-| Problema | Decisão | O que mudou | Verificação |
-|---|---|---|---|
-| Seleção ficava presa a estrutura invisível (camada desligada); regra repetida em três lugares | `CONSOLIDAR_EXISTENTES` | `selecao.conferir()` único, chamado por `isolar`, `desfazer`, `restaurar` e por `mudou()` em `main.js` | `interacao.test.js` |
-| Trocar o tema não relia o brilho da seleção | `ESTENDER_EXISTENTE` | `selecao.redestacar()` junto de `foco.reaplicar()` | `interacao.test.js`, navegador |
-| Falha ao carregar um GLB deixava "Carregando…" para sempre | `ESTENDER_EXISTENTE` | `carregarModelos` diz qual camada falhou; `main.js` mostra a mensagem e "Tentar de novo" (`.carregando.falhou`) | `viewer.test.js`, navegador |
-| No celular, abas pareciam não responder com a ficha aberta | `ESTENDER_EXISTENTE` | tocar numa aba fecha a ficha (fora de quiz e pintura) e abre a bandeja | navegador |
-| "Limpar pintura" do pincel apagava sem confirmar | `CONSOLIDAR_EXISTENTES` | `limparTudo()` único em `pintura.js`, com confirmação nos dois lugares | `ui.test.js` |
-| Ficha citava um relatório que o app não entrega; sem Esc nem retorno de foco | `ESTENDER_EXISTENTE` | cita Howells e Kim et al. 2013; Esc (campo de busca vazio) fecha a ficha e devolve o foco à busca | navegador |
-| Contraste ~2:1 em estrutura de camada desligada | `ESTENDER_EXISTENTE` | `--tinta-3` + traço pontilhado no lugar de `opacity: 0.5` | navegador |
-| `aria-live` em seções inteiras; paleta e régua de vistas sem estado/teclado; camadas sem `aria-controls` | `ESTENDER_EXISTENTE` | live só em `.retorno` e `.contagem`; `aria-pressed` na paleta; setas e uma parada de Tab na régua de vistas; `aria-controls` nas camadas; título do Desfazer corrigido | `ui.test.js`, navegador |
-| Primeira seleção varria os vértices do modelo inteiro; camada a 0% ainda era desenhada | `ESTENDER_EXISTENTE` | rótulos criados sob demanda (`criarItem`); `material.visible` abaixo de `INVISIVEL` no raio-X; `raiox.restaurar` avisa uma vez | `bandeja.test.js`, `cena.test.js` |
-| Seleção no Consultar abria camadas na bandeja escondida do Estudar | `ESTENDER_EXISTENTE` | `mostrarSelecionada` não abre com o painel oculto; checkboxes guardados num `Map` | `ui.test.js` |
-
-### Evoluções de estudo (lote 3)
-
-| Evolução | Decisão | O que mudou | Verificação |
-|---|---|---|---|
-| Revisão das estruturas que mais erra | `ESTENDER_EXISTENTE` | `porId[id]` ganhou a data da última resposta (`[acertos, erros, quando]`, compatível com os dados antigos); `revisao()` em `quiz.js` ordena por saldo de erros e, no empate, pela vista há mais tempo; botão "Revisar o que mais erro (N)" e "Você mais erra" saem da mesma lista | `ui.test.js` |
-| Ficha ligada aos outros modos | `ESTENDER_EXISTENTE` | `criarInfo` aceita `aoEstudar`/`aoTreinar`: "Ver no índice do Estudar" (troca o modo e abre a camada) e "Quiz de <camada>" (`quiz.abrir({ camadas })`) | `ui.test.js`, navegador |
-| Correção de nomes mais justa | `ESTENDER_EXISTENTE` | genérico no plural e em latim pode ser omitido ("maxilares", "Venae …" sem "venae"); duas letras vizinhas trocadas contam como um erro (Damerau restrito) | `nomes.test.js` |
-| Etiqueta 3D não distinguia "a conferir" | `ESTENDER_EXISTENTE` | `.rotulo.a-conferir` usa a fita lisa da ficha | `bandeja.test.js` |
-
-Sobre a correção de nomes: omitir o genérico gera formas curtas compartilhadas entre estruturas de camadas diferentes ("frontal" vale para o osso e para o nervo; "facial" para nervo, artéria e veia). Isso já existia antes; o exercício pergunta o nome de uma estrutura específica, então o contexto desambigua.
-
-### Pipeline e dados (lote 4)
-
-| Problema | Decisão | O que mudou | Verificação |
-|---|---|---|---|
-| Pipeline ia à rede mesmo com o cache completo; downloads sem conferência | `ESTENDER_EXISTENTE` | `01-baixar`: sem rede com o cache completo; download direto para `.part` e renomeado no fim; SHA-256 de cada arquivo em `fontes.json` no cache, conferido nas execuções seguintes; `--tamanhos` consulta o servidor | `node --check` (o cache atual não tem o BodyParts3D; não foi rodado) |
-| `06-verificar` imprimia "FALHOU" e saía com sucesso; fora do `npm run pipeline` | `ESTENDER_EXISTENTE` | sai com 1; confere ids únicos, ids iguais aos do dicionário, nós sem aninhamento (hipótese do `prepararMalha`) e orçamento dos GLB (3 MB por arquivo, 12 MB no total); entra no pipeline depois do 05 | rodado: 314 ids, 2,40 MB, OK |
-| `08-validar` nunca falhava e apagava o checklist marcado à mão | `ESTENDER_EXISTENTE` | status por item em `conformidade.json`; piora em relação à execução anterior = lista, não grava e sai com 1 (`--aceitar` grava); `[x]` do relatório preservado; data só muda quando o resultado muda | rodado: regressão simulada detectada; checklist preservado; segunda execução sem alteração |
-| Corrigir nome/latim/descrição exigia o pipeline inteiro (~1 GB + Blender) | `ISOLAR_EXISTENTE` | `nomeComLado` saiu do 03c para `catalogo.mjs`; o 05 reconstrói a seleção a partir do `estruturas.json` publicado quando falta `work/selecao.json`; `npm run dicionario` | reconstrução byte a byte idêntica ao publicado; `pipeline.test.js` |
-| Dicionário desatualizado passava no `npm test` | `ESTENDER_EXISTENTE` | `integridade.test.js` compara cada estrutura com `catalogo.mjs`/`descricoes.mjs`; exercícios não podem ter membro "a conferir" | `integridade.test.js` |
-| Erros crus (`ENOENT`, `TypeError`) quando falta uma etapa | `CRIAR_NOVO` (helper de 4 linhas, sem equivalente) | `lerJson(arquivo, etapa)` em `config.mjs`, usado no 03b, 03c e 04 | `pipeline.test.js` |
-| Projeto sem controle de versão; Node mínimo não declarado | `CRIAR_NOVO` | `git init` na pasta do projeto, `.gitignore` (gerados, junções e estado local) e `.gitattributes` (LF; binários); `engines` no `package.json` (o do Vite 8) | `git status`: 88 arquivos, 3,4 MB, nenhum commit ainda |
-
-Pendente e fora do alcance dos scripts (exige trabalho manual): a fonte bibliográfica de cada uma das 152 descrições (o pipeline não tem o campo e nenhuma descrição cita livro-texto); a conferência das 14 estruturas marcadas "a conferir"; e as 23 estruturas do catálogo que não existem nas fontes de modelos.
+## 8. Testes, pendências e decisões
 
 ### Testes e cobertura
 
-`npm run cobertura`: 252 testes; linhas 99,7%, funções 99,1%, instruções 98,8%, ramos 94,2% (sem `main.js`, que é a composição da página e se verifica no navegador; os ramos variam alguns décimos entre execuções porque o quiz embaralha as perguntas). Depois da refundação da interface, `consulta.js` (busca, ranking, teclado), `foco.js`, `viewer.aproximar`, os carimbos e o Raio-X do quiz e a etiqueta 3D da seleção ganharam testes próprios; os ramos restantes são, na maioria, defensivos (`?.`, valores padrão).
+`npm run cobertura`: 269 testes; linhas 99,9%, funções 99,5%, instruções 99%, ramos 94,1% (sem `main.js`, que é a composição da página e se verifica no navegador; os ramos variam alguns décimos entre execuções porque o quiz embaralha as perguntas). Os ramos restantes são, na maioria, defensivos (`?.`, valores padrão). O mesmo conjunto roda a cada envio para a `main`, antes da publicação no GitHub Pages.
+
+### Pendências que exigem trabalho manual
+
+- 14 estruturas marcadas "a conferir" esperam conferência em livro-texto; enquanto isso ficam fora do quiz e dos exercícios.
+- 23 estruturas do catálogo não existem nas fontes de modelos (BodyParts3D e Z-Anatomy, incluindo a exportação mais recente do Z-Anatomy). A candidata a completá-las é o Open3DModel (CC BY-SA 4.0, mesma linhagem), cuja parte de cabeça e pescoço ainda não foi publicada.
+- O pipeline completo exige o Blender (etapa 03a); `npm run dicionario` regera nomes e descrições sem ele.
 
 ### Fora do escopo ou não recomendado
 
-- **Guardar normais nos GLB** para evitar `computeVertexNormals` no carregamento (`prepararMalha`): o `weld` seria desfeito e os arquivos ficariam maiores. Mantido.
-- **BVH para raycast** (`three-mesh-bvh`): o pick é por toque, 314 malhas não justificam dependência nova, e o custo dos rótulos foi resolvido no item 2.
+- **Guardar normais nos GLB** para evitar `computeVertexNormals` no carregamento (`prepararMalha`): o `weld` seria desfeito e os arquivos ficariam maiores.
+- **BVH para raycast** (`three-mesh-bvh`): o pick é por toque e 314 malhas não justificam dependência nova; o custo dos rótulos já é resolvido pelo rearranjo sob demanda e pela criação dos rótulos só quando precisam aparecer.

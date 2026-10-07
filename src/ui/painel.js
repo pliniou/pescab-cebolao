@@ -62,10 +62,19 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
     return m ? `#${(m.material.userData.corOriginal || m.material.userData.cor).getHexString()}` : 'transparent';
   };
 
+  // Uma região dominante: roteiros e camadas abertos; explosão, cortes e pintura recolhidos, com o estado atual no
+  // título (quem não abre sabe o que está ligado). O raio-X de cada camada fica dentro dela, e o valor aparece ao lado
+  // do nome quando não é 100%.
+  const ferramenta = (nome, resumo, corpo, classe = '') => `
+    <details class="ferramenta">
+      <summary class="titulo-secao"><span class="titulo-nome">${nome}</span><span class="resumo">${resumo}</span></summary>
+      <div class="compartimento ${classe}">${corpo}</div>
+    </details>`;
   el.innerHTML = `
+    <p class="dica intro-modo">Monte a cena: comece por um roteiro ou ligue camadas, cortes e explosão.</p>
     <h2 class="titulo-secao">Roteiros de estudo</h2>
     <div class="compartimento roteiros">
-      ${presets.map((p, i) => `<button class="bt roteiro" data-preset="${i}" title="${esc(p.nota)}">${esc(p.nome)}</button>`).join('')}
+      ${presets.map((p, i) => `<button class="bt roteiro" data-preset="${i}" aria-pressed="false" title="${esc(p.nota)}">${esc(p.nome)}</button>`).join('')}
     </div>
     <p class="nota-roteiro dica" hidden></p>
 
@@ -76,10 +85,10 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
           <div class="cab">
             <input type="checkbox" class="vis-camada" aria-label="Mostrar ${esc(dados.camadas[c])}">
             <span class="cor" style="background:${corCss(c)}"></span>
-            <button class="abrir" aria-expanded="false" aria-controls="conteudo-${c}">${esc(dados.camadas[c])} <span class="qtd">${porCamada[c].length}</span>${icone('abrir', { classe: 'seta' })}</button>
+            <button class="abrir" aria-expanded="false" aria-controls="conteudo-${c}">${esc(dados.camadas[c])} <span class="qtd">${porCamada[c].length}</span><span class="estado-raiox" hidden></span>${icone('abrir', { classe: 'seta' })}</button>
           </div>
-          <label class="raiox">Raio-X <input type="range" min="0" max="100" value="100" class="opacidade" aria-label="Opacidade de ${esc(dados.camadas[c])}"><output>100%</output></label>
           <div class="conteudo" id="conteudo-${c}" hidden>
+            <label class="raiox">Raio-X <input type="range" min="0" max="100" value="100" class="opacidade" aria-label="Opacidade de ${esc(dados.camadas[c])}"><output>100%</output></label>
             <div class="acoes-camada">
               <button class="bt mini" data-acao="todas">Mostrar todas</button>
               <button class="bt mini" data-acao="nenhuma">Ocultar todas</button>
@@ -88,17 +97,15 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
           </div>
         </div>`).join('')}
     </div>
+    <p class="dica">Raio-X deixa a camada translúcida para ver o que está atrás; abra a camada para ajustar.</p>
 
-    <h2 class="titulo-secao">Explosão</h2>
-    <div class="compartimento">
+    ${ferramenta('Explosão', '0%', `
       <label class="explosao">Afastar os ossos
         <input id="explosao" type="range" min="0" max="100" value="0" step="1">
         <output id="explosao-valor">0%</output>
-      </label>
-    </div>
+      </label>`)}
 
-    <h2 class="titulo-secao">Cortes</h2>
-    <div class="compartimento cortes">
+    ${ferramenta('Cortes', 'desligados', `
       ${Object.entries(PLANOS).map(([k, p]) => {
         const [a, b] = cortes.limites[k];
         return `
@@ -112,7 +119,7 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
           <span class="lado">mantém: ${p.menor}</span>
         </div>`;
       }).join('')}
-    </div>
+      <p class="dica">A posição é medida do centro do crânio; "mantém" diz qual lado do corte continua à vista.</p>`, 'cortes')}
 
     <h2 class="titulo-secao">Rótulos</h2>
     <div class="compartimento">
@@ -120,8 +127,7 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
       <p class="dica">Rótulos sobrepostos ficam ocultos; aproxime a câmera ou isole estruturas para ver mais.</p>
     </div>
 
-    <h2 class="titulo-secao">Cores e pintura</h2>
-    <div class="compartimento sec-pintura"></div>
+    ${ferramenta('Cores e pintura', '', '', 'sec-pintura')}
   `;
 
   const $ = (s) => el.querySelector(s);
@@ -154,6 +160,33 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
       cel.classList.toggle('selecionada', selecao.selecionada === m);
     }
   }
+
+  // Estado das ferramentas recolhidas, no título delas, e o raio-X de cada camada ao lado do nome
+  function resumir() {
+    const exp = el.querySelector('#explosao');
+    el.querySelector('#explosao').closest('.ferramenta').querySelector('.resumo').textContent = `${exp.value}%`;
+    const ligados = Object.entries(PLANOS).filter(([k]) => cortes.estado[k].ativo)
+      .map(([k, p]) => `${p.nome.toLowerCase()} ${Math.round(cortes.estado[k].valor * 1000)} mm`);
+    el.querySelector('.cortes').closest('.ferramenta').querySelector('.resumo').textContent = ligados.join(' · ') || 'desligados';
+    for (const c of ordem) {
+      const v = Math.round(raiox.valor(c) * 100);
+      const marca = blocoCamada(c).querySelector('.estado-raiox');
+      marca.hidden = v === 100;
+      marca.textContent = `raio-X ${v}%`;
+    }
+  }
+
+  // O roteiro aplicado fica marcado até o estudante mexer na cena por conta própria (camadas, cortes, explosão,
+  // Desfazer); main.js chama limparRoteiro para o que acontece fora da bandeja
+  function marcarRoteiro(i) {
+    for (const b of el.querySelectorAll('.roteiro')) b.setAttribute('aria-pressed', String(b.dataset.preset === String(i)));
+  }
+  const limparRoteiro = () => marcarRoteiro(null);
+  for (const sel of ['.camadas', '.cortes', '.explosao']) {
+    for (const tipo of ['input', 'change']) el.querySelector(sel).addEventListener(tipo, limparRoteiro);
+  }
+  el.querySelector('.camadas').addEventListener('click', (ev) => { if (ev.target.closest('[data-acao], .nome-estr')) limparRoteiro(); });
+  el.querySelector('#explosao').addEventListener('input', resumir);
 
   // Camadas
   el.querySelector('.camadas').addEventListener('click', (ev) => {
@@ -199,6 +232,7 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
     const c = ev.target.closest('.camada').dataset.camada;
     ev.target.nextElementSibling.textContent = `${ev.target.value}%`;
     raiox.definir(c, ev.target.value / 100);
+    resumir();
   });
 
   // Cortes
@@ -214,6 +248,7 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
       cortes.definir(k, { valor: ev.target.value / 1000 });
       d.querySelector('.mm').textContent = `${ev.target.value} mm`;
     }
+    resumir();
   });
   el.querySelector('.cortes').addEventListener('click', (ev) => {
     if (!ev.target.classList.contains('inverter')) return;
@@ -230,6 +265,7 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
     if (!b) return;
     const p = presets[b.dataset.preset];
     aoPreset(p);
+    marcarRoteiro(b.dataset.preset);
     const nota = $('.nota-roteiro');
     nota.textContent = p.nota;
     nota.hidden = false;
@@ -253,6 +289,7 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
       d.querySelector('.inverter').disabled = !e.ativo;
       d.querySelector('.lado').textContent = `mantém: ${e.inverter ? p.maior : p.menor}`;
     }
+    resumir();
   }
 
   // Rótulos
@@ -278,8 +315,9 @@ export function criarPainel(el, { dados, modelos, ordem, selecao, cortes, rotulo
   }
 
   sincronizar();
+  resumir();
   return {
-    sincronizar, mostrarSelecionada, sincronizarControles, atualizarCores,
+    sincronizar, mostrarSelecionada, sincronizarControles, atualizarCores, resumir, limparRoteiro,
     secaoPintura: el.querySelector('.sec-pintura'),
     definirRotulos(v) { $('#rotulos').checked = v; rotulos.definir(v); },
   };

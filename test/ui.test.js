@@ -217,8 +217,37 @@ describe('painel (bandeja do Estudar)', () => {
 
   it('a bandeja do Estudar não tem busca: ela mora no Consultar', () => {
     expect(el.querySelector('#busca')).toBeNull();
-    expect([...el.querySelectorAll('.titulo-secao')].map((h) => h.textContent))
+    expect([...el.querySelectorAll('.titulo-secao')].map((h) => (h.querySelector('.titulo-nome') ?? h).textContent))
       .toEqual(['Roteiros de estudo', 'Camadas', 'Explosão', 'Cortes', 'Rótulos', 'Cores e pintura']);
+  });
+
+  it('explosão, cortes e pintura ficam recolhidos com o estado no título; o raio-X fora de 100% aparece na camada', () => {
+    const ferramentas = [...el.querySelectorAll('details.ferramenta')];
+    expect(ferramentas.map((d) => d.querySelector('.titulo-nome').textContent)).toEqual(['Explosão', 'Cortes', 'Cores e pintura']);
+    expect(ferramentas.every((d) => !d.open)).toBe(true);
+    const resumo = (n) => ferramentas[n].querySelector('.resumo').textContent;
+    expect(resumo(0)).toBe('0%');
+    expect(resumo(1)).toBe('desligados');
+    const corte = el.querySelector('.corte[data-plano="sagital"]');
+    corte.querySelector('.ativo').checked = true;
+    corte.querySelector('.ativo').dispatchEvent(new Event('input', { bubbles: true }));
+    expect(resumo(1)).toBe('sagital 0 mm');
+    const r = bloco('ossos').querySelector('.opacidade');
+    r.value = '40';
+    r.dispatchEvent(new Event('input', { bubbles: true }));
+    const marca = bloco('ossos').querySelector('.estado-raiox');
+    expect(marca.hidden).toBe(false);
+    expect(marca.textContent).toBe('raio-X 40%');
+    expect(bloco('ossos').querySelector('.conteudo').contains(r)).toBe(true); // o controle mora dentro da camada
+  });
+
+  it('o roteiro aplicado fica marcado até o estudante mexer na cena', () => {
+    const rot = () => [...el.querySelectorAll('.roteiro')].map((b) => b.getAttribute('aria-pressed'));
+    clicar(el.querySelector('[data-preset="1"]'));
+    expect(rot()[1]).toBe('true');
+    expect(rot().filter((v) => v === 'true')).toHaveLength(1);
+    clicar(bloco('musculos').querySelector('[data-acao="nenhuma"]'));
+    expect(rot().every((v) => v === 'false')).toBe(true);
   });
 
   it('ligar uma camada sem nenhuma estrutura visível mostra todas', () => {
@@ -462,7 +491,6 @@ describe('quiz', () => {
   let el, viewer, modelos, raiox, selecao, eventos, quiz;
   beforeEach(() => {
     localStorage.clear();
-    vi.stubGlobal('alert', vi.fn());
     el = div();
     el.hidden = true;
     viewer = criarViewerFalso();
@@ -488,14 +516,53 @@ describe('quiz', () => {
     expect(qtd('dentes')).toBe(String(elegiveis('dentes')));
   });
 
-  it('sem camada escolhida avisa e não começa', () => {
+  it('sem camada escolhida o Começar desliga e a dica diz por quê; nada começa', () => {
     quiz.abrir();
-    for (const i of el.querySelectorAll('input[name="camada"]')) i.checked = false;
+    const comecar = el.querySelector('[data-acao="comecar"]');
+    expect(comecar.disabled).toBe(false);
+    for (const i of el.querySelectorAll('input[name="camada"]')) { i.checked = false; i.dispatchEvent(new Event('change', { bubbles: true })); }
+    expect(comecar.disabled).toBe(true);
+    expect(el.querySelector('.sem-camada').hidden).toBe(false);
+    comecar.disabled = false; // mesmo se o botão for acionado, não há o que perguntar
     acao('comecar');
-    expect(alert).toHaveBeenCalled();
     expect(eventos.ini).toEqual([]);
+    el.querySelector('input[name="camada"]').checked = true;
+    el.querySelector('input[name="camada"]').dispatchEvent(new Event('change', { bubbles: true }));
+    expect(comecar.disabled).toBe(false);
+    expect(el.querySelector('.sem-camada').hidden).toBe(true);
   });
 
+  it('a pergunta pulsa ~3,5 s e assenta (para de redesenhar); com movimento reduzido o brilho é fixo', () => {
+    quiz.abrir();
+    modo('multipla');
+    acao('comecar');
+    const alvo = [...modelos.malhas.values()].find((m) => m.material.emissiveIntensity !== 1);
+    expect(viewer.quadro(0.5)).toBe(true);
+    for (let i = 0; i < 8; i++) viewer.quadro(0.5);
+    expect(alvo.material.emissiveIntensity).toBe(0.55);
+    expect(viewer.quadro(0.5)).toBe(false); // assentou: a cena volta a ficar parada
+    acao('sair');
+    vi.stubGlobal('matchMedia', (q) => ({ matches: q === '(prefers-reduced-motion: reduce)' }));
+    quiz.abrir();
+    modo('multipla');
+    acao('comecar');
+    viewer.quadro(0.016);
+    const alvo2 = [...modelos.malhas.values()].find((m) => m.material.emissiveIntensity !== 1);
+    expect(alvo2.material.emissiveIntensity).toBe(0.55);
+    expect(viewer.quadro(0.016)).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  it('redestacar relê os tokens das marcas (troca de tema)', () => {
+    quiz.abrir();
+    modo('multipla');
+    acao('comecar');
+    const alvo = [...modelos.malhas.values()].find((m) => m.material.emissiveIntensity !== 1);
+    alvo.material.color.set(0x000000);
+    quiz.redestacar();
+    const token = getComputedStyle(document.documentElement).getPropertyValue('--pergunta-3d').trim().slice(1);
+    expect(alvo.material.color.getHexString()).toBe(token);
+  });
   it('modo clique: acerto, erro, "não sei", resultado e erradas salvas', () => {
     quiz.abrir();
     acao('comecar');
@@ -844,13 +911,19 @@ describe('pintura', () => {
     expect(selecao.interceptar([])).toBe(true);
     escolherCor(PALETA[4].hex);
     selecao.interceptar([acerto(m)]);
-    vi.stubGlobal('confirm', vi.fn(() => false));
+    vi.useFakeTimers();
+    const limpar = card.querySelector('[data-acao="limpar"]');
+    acao('limpar'); // primeiro toque só arma a confirmação no próprio botão
+    expect(limpar.textContent).toBe('Confirmar: apagar tudo');
+    expect(cores.qtdPintadas).toBe(1);
+    vi.advanceTimersByTime(4000); // sem o segundo toque, desarma
+    expect(limpar.textContent).toBe('Limpar pintura');
+    expect(cores.qtdPintadas).toBe(1);
     acao('limpar');
-    expect(confirm).toHaveBeenCalledWith('Apagar toda a pintura?');
-    expect(cores.qtdPintadas).toBe(1); // recusou: nada apagado
-    vi.stubGlobal('confirm', vi.fn(() => true));
-    acao('limpar');
+    acao('limpar'); // segundo toque confirma
     expect(cores.qtdPintadas).toBe(0);
+    expect(limpar.classList.contains('confirmar')).toBe(false);
+    vi.useRealTimers();
   });
 
   it('abrir um exercício com o pincel aberto sai do pincel primeiro', () => {
@@ -1030,13 +1103,15 @@ describe('pintura', () => {
     expect(card.querySelector('.retorno').textContent).toMatch(/Perfeito! .* todas com o nome certo/);
   });
 
-  it('"Limpar pintura" do painel pede confirmação', () => {
+  it('"Limpar pintura" do painel pede confirmação no próprio botão; sem pintura, não arma', () => {
+    const bt = secao.querySelector('[data-acao="limpar-tudo"]');
+    clicar(bt);
+    expect(bt.textContent).toBe('Limpar pintura'); // nada pintado: nada a confirmar
     cores.pintar(malhaEn('masseter'), PALETA[0].hex);
-    vi.stubGlobal('confirm', vi.fn(() => false));
-    clicar(secao.querySelector('[data-acao="limpar-tudo"]'));
+    clicar(bt);
     expect(cores.qtdPintadas).toBe(1);
-    vi.stubGlobal('confirm', vi.fn(() => true));
-    clicar(secao.querySelector('[data-acao="limpar-tudo"]'));
+    expect(bt.classList.contains('confirmar')).toBe(true);
+    clicar(bt);
     expect(cores.qtdPintadas).toBe(0);
   });
 });

@@ -2,13 +2,14 @@
 // icone(nome) devolve o SVG como texto, para as telas montadas com template strings; o traço segue a cor do texto.
 import {
   SunMoon, X, Brush, Eraser, TriangleAlert, Undo2, RotateCcw, PenLine, Check, ChevronRight, Eye, Search,
-  ListChecks, Palette,
+  ListChecks, Palette, Layers, Rotate3d, ArrowRight,
 } from 'lucide';
 
 const ICONES = {
   tema: SunMoon, fechar: X, pincel: Brush, borracha: Eraser, aviso: TriangleAlert,
   desfazer: Undo2, camera: RotateCcw, nomear: PenLine, certo: Check, errado: X, abrir: ChevronRight,
-  ocultas: Eye, busca: Search, quiz: ListChecks, exercicio: Palette,
+  ocultas: Eye, busca: Search, quiz: ListChecks, exercicio: Palette, raiox: Layers, girar: Rotate3d,
+  ir: ArrowRight,
 };
 
 const atributos = (a) => Object.entries(a).map(([k, v]) => ` ${k}="${v}"`).join('');

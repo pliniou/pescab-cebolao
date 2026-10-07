@@ -20,6 +20,9 @@ const VISTAS = {
 
 // Interações que podem mudar o estado da cena (capturadas antes dos handlers; o quadro sai depois deles).
 const INTERACOES = ['pointerdown', 'pointerup', 'click', 'input', 'change', 'keydown', 'wheel'];
+// Digitar num campo de texto (a busca, o nome na pintura) não muda a cena; o que a tecla provoca (Enter escolhe uma
+// estrutura) invalida pelo próprio caminho. Sem esse filtro, cada letra redesenhava a cena e rearranjava os rótulos.
+const ehCampoDeTexto = (alvo) => alvo instanceof HTMLInputElement && (alvo.type === 'search' || alvo.type === 'text');
 
 // Caixa (coordenadas do mundo) que envolve os objetos; vazia se a lista for vazia.
 export function caixaDosObjetos(objetos) {
@@ -31,10 +34,15 @@ export function caixaDosObjetos(objetos) {
 export function criarViewer(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // para o leitor de tela o canvas é uma imagem com nome; main.js acrescenta a estrutura selecionada
+  renderer.domElement.setAttribute('role', 'img');
+  renderer.domElement.setAttribute('aria-label', 'Modelo 3D de cabeça e pescoço');
   container.appendChild(renderer.domElement);
 
+  // os rótulos 3D repetem nomes que a ficha e o índice já dão: fora da árvore de acessibilidade
   const rotulos = new CSS2DRenderer();
   rotulos.domElement.className = 'rotulos';
+  rotulos.domElement.setAttribute('aria-hidden', 'true');
   container.appendChild(rotulos.domElement);
 
   const scene = new THREE.Scene();
@@ -58,7 +66,9 @@ export function criarViewer(container) {
     for (const f of aoInvalidar) f();
   }
   controls.addEventListener('change', invalidar); // inclui a inércia (damping) e as animações de câmera
-  for (const tipo of INTERACOES) window.addEventListener(tipo, invalidar, { capture: true, passive: true });
+  for (const tipo of INTERACOES) {
+    window.addEventListener(tipo, (ev) => { if (!ehCampoDeTexto(ev.target)) invalidar(); }, { capture: true, passive: true });
+  }
 
   const alvo0 = new THREE.Vector3(0, -0.02, 0);
   let raio0 = 0.19; // raio da cabeça inteira (enquadrar); a distância sai dele na hora, com a proporção atual da vista
@@ -110,6 +120,12 @@ export function criarViewer(container) {
     irPara(dir.toArray(), dist, esfera.center);
   }
   const resetar = () => irPara([0.35, 0.15, 1]);
+  // Onde a câmera está, ou para onde vai se houver animação: um modo guarda isso ao entrar e volta para lá ao sair, e
+  // o foco calcula daí o que fica na frente da peça
+  const destino = () => ({ p: (anim ? anim.p1 : camera.position).clone(), a: (anim ? anim.a1 : controls.target).clone() });
+  function voltarPara({ p, a }) {
+    anim = { t: 0, p0: camera.position.clone(), p1: p.clone(), a0: controls.target.clone(), a1: a.clone() };
+  }
 
   function enquadrar(raio) {
     raio0 = raio;
@@ -117,23 +133,46 @@ export function criarViewer(container) {
     controls.target.copy(alvo0);
   }
 
-  // Desloca o centro da imagem para cima (fy, fração da altura) e para a esquerda (fx, fração da largura), quando um
-  // cartão ocupa a parte de baixo (celular) ou a margem direita (desktop)
+  // Desloca o centro da imagem para cima (fy, fração da altura) e para a esquerda (fx, fração da largura), quando a
+  // lateral cobre um canto da vista (tablet). A imagem desliza até o novo centro junto com a câmera, em vez de saltar
+  // (com movimento reduzido, vai direto).
   let deslocY = 0, deslocX = 0;
+  let alvoY = 0, alvoX = 0;
+  function projetar() {
+    const w = container.clientWidth, h = container.clientHeight;
+    if (Math.abs(deslocY) > 1e-4 || Math.abs(deslocX) > 1e-4) camera.setViewOffset(w, h, w * deslocX, h * deslocY, w, h);
+    else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+  }
   function redimensionar() {
     const w = container.clientWidth, h = container.clientHeight;
     renderer.setSize(w, h);
     rotulos.setSize(w, h);
     camera.aspect = w / h;
-    if (deslocY || deslocX) camera.setViewOffset(w, h, w * deslocX, h * deslocY, w, h); else camera.clearViewOffset();
-    camera.updateProjectionMatrix();
+    projetar();
     invalidar();
   }
-  function deslocar(fy, fx = 0) { deslocY = fy; deslocX = fx; redimensionar(); }
+  function deslocar(fy, fx = 0) {
+    alvoY = fy; alvoX = fx;
+    if (semMovimento()) { deslocY = fy; deslocX = fx; }
+    projetar();
+    invalidar();
+  }
+  // tarefa do laço: aproxima o deslocamento do alvo (desaceleração exponencial, ~0,3 s)
+  function deslizar(dt) {
+    if (deslocY === alvoY && deslocX === alvoX) return false;
+    const k = 1 - Math.exp(-dt * 12);
+    deslocY += (alvoY - deslocY) * k;
+    deslocX += (alvoX - deslocX) * k;
+    if (Math.abs(alvoY - deslocY) < 1e-3 && Math.abs(alvoX - deslocX) < 1e-3) { deslocY = alvoY; deslocX = alvoX; }
+    projetar();
+    invalidar();
+    return true;
+  }
   new ResizeObserver(redimensionar).observe(container);
   redimensionar();
 
-  const tarefas = new Set(); // (dt) => true se precisa redesenhar
+  const tarefas = new Set([deslizar]); // (dt) => true se precisa redesenhar
   const relogio = new THREE.Timer();
   relogio.connect(document); // aba em segundo plano não acumula tempo
   renderer.setAnimationLoop((t) => {
@@ -156,6 +195,6 @@ export function criarViewer(container) {
 
   return {
     renderer, scene, camera, controls, tarefas, aoInvalidar, invalidar,
-    vista, resetar, enquadrar, irPara, focar, aproximar, enquadrarCaixa, deslocar,
+    vista, resetar, enquadrar, irPara, focar, aproximar, enquadrarCaixa, deslocar, destino, voltarPara,
   };
 }

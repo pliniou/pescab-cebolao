@@ -9,7 +9,8 @@ const FECHAR = `<button class="bt icone-so fechar" aria-label="Fechar a ficha">$
 const LADO = { D: 'Direito', E: 'Esquerdo', M: 'Mediano' };
 
 // aoEstudar / aoTreinar: a ficha leva a estrutura para os outros modos (ver no índice do Estudar; quiz da camada dela)
-export function criarInfo(el, camadas, { aoIsolar, aoFechar, aoOcultar, aoEstudar, aoTreinar } = {}) {
+// aoSoltarRecuo: devolve a opacidade das estruturas que o foco deixou translúcidas (ver recuo)
+export function criarInfo(el, camadas, { aoIsolar, aoFechar, aoOcultar, aoEstudar, aoTreinar, aoSoltarRecuo } = {}) {
   let atual = null;
   function mostrar(m) {
     atual = m;
@@ -33,12 +34,14 @@ export function criarInfo(el, camadas, { aoIsolar, aoFechar, aoOcultar, aoEstuda
           ${avisos.map((t) => `<p>${esc(t)}</p>`).join('')}
           <p class="fonte">Medidas comparadas com Howells (crânio) e Kim et al. 2013 (dentes).</p></details>` : ''}
         <p class="fonte">Fonte do modelo: ${esc(e.fonte)}</p>
+        <p class="nota-recuo dica" hidden>${icone('raiox')}<span></span>
+          <button class="bt mini" data-acao="soltar-recuo">Deixar opacas</button></p>
         <div class="acoes">
           <button class="bt" data-acao="isolar">Isolar</button>
           <button class="bt" data-acao="ocultar">Ocultar</button>
         </div>
         ${aoEstudar || aoTreinar ? `<div class="acoes seguir">
-          ${aoEstudar ? `<button class="bt lancador" data-acao="estudar">${icone('abrir')}<span>Ver no índice do Estudar</span></button>` : ''}
+          ${aoEstudar ? `<button class="bt lancador" data-acao="estudar">${icone('ir')}<span>Ver no índice do Estudar</span></button>` : ''}
           ${aoTreinar ? `<button class="bt lancador" data-acao="treinar">${icone('quiz')}<span>Quiz de ${esc((camadas[e.camada] || e.camada).toLowerCase())}</span></button>` : ''}
         </div>` : ''}`;
     }
@@ -56,6 +59,16 @@ export function criarInfo(el, camadas, { aoIsolar, aoFechar, aoOcultar, aoEstuda
     else if (b.dataset.acao === 'ocultar') aoOcultar?.(atual);
     else if (b.dataset.acao === 'estudar') aoEstudar?.(atual);
     else if (b.dataset.acao === 'treinar') aoTreinar?.(atual);
+    else if (b.dataset.acao === 'soltar-recuo') { aoSoltarRecuo?.(); recuo(0); }
   });
-  return { mostrar };
+  // n estruturas ficaram translúcidas na frente da selecionada: a ficha diz o que aconteceu e oferece desfazer
+  function recuo(n) {
+    const nota = el.querySelector('.nota-recuo');
+    if (!nota) return;
+    nota.hidden = !n;
+    nota.querySelector('span').textContent = n === 1
+      ? 'Uma estrutura na frente dela ficou translúcida para ela aparecer.'
+      : `${n} estruturas na frente dela ficaram translúcidas para ela aparecer.`;
+  }
+  return { mostrar, recuo };
 }
